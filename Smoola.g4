@@ -1,9 +1,9 @@
 grammar Smoola;
 @header { 
-    import ast.Type.PrimitiveType.IntType;
+    import ast.Type.*;
     import ast.node.Program;
     import ast.node.Declaration.*;
-    import ast.node.expression.Value.IntValue;
+    import ast.node.expression.*;
     import ast.node.type.*;
 
 }
@@ -13,7 +13,7 @@ grammar Smoola;
 }
 
     program:
-        mainClass (classDeclaration)* EOF {Program prog = new Program();}
+        {Program prog = new Program();} mainClass[prog] (classDeclaration)* EOF 
     ;
     mainClass[Program Prog] returns [ClassDeclaration classDec]:
         'class' className = ID {
@@ -33,15 +33,15 @@ grammar Smoola;
         }
         '{' (varDeclaration)* (methodDeclaration)* '}'
     ;
-    varDeclaration returns [VarDeclaration varDeclaration]:
+    varDeclaration returns [VarDeclaration varDec]:
         'var' name = ID ':' t = type ';' 
         {
             Identifier id = new Identifier(name);
-            $varDeclaration = new VarDeclaration(id, $t)
+            $varDec = new VarDeclaration(id, $t.t);
 
         }
     ;
-    methodDeclaration returns[MethodDeclaration methodDeclaration]:
+    methodDeclaration returns[MethodDeclaration methodDec]:
         'def' methodname = ID{
             Identifier id = new Identifier(methodname);
             methodDeclaration = new MethodDeclaration(id);
@@ -186,11 +186,11 @@ grammar Smoola;
         |	'(' thisexpr = expression ')' {$expr = thisexpr.expr;} 
 	;
 	type returns [Type t]:
-	    'int' {$type = new IntType();}|
-	    'boolean' {$type = new BooleanType();}|
-	    'string' {$type = new StringType();}|
-	    'int' '[' ']' {$type = new ArrayType();}|
-	    ID {$type = new UserDefinedType();}
+	    'int' {$t = new IntType();}|
+	    'boolean' {$t = new BooleanType();}|
+	    'string' {$t = new StringType();}|
+	    'int' '[' ']' {$t = new ArrayType();}|
+	    ID {$t = new UserDefinedType();}
 	;
     CONST_NUM:
 		[0-9]+ 
