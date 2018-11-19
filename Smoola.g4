@@ -1,52 +1,93 @@
 grammar Smoola;
+@header { 
+    import ast.Type.PrimitiveType.IntType;
+    import ast.node.Program;
+    import ast.node.Declaration.*;
+    import ast.node.expression.Value.IntValue;
+    import ast.node.type.*;
+
+}
+
+@member {
+
+}
+
     program:
-        mainClass (classDeclaration)* EOF
+        mainClass (classDeclaration)* EOF {Program prog = new Program();}
     ;
-    mainClass:
-        // name should be checked later
-        'class' ID '{' 'def' ID '(' ')' ':' 'int' '{'  statements 'return' expression ';' '}' '}'
+    mainClass[Program Prog] returns [ClassDeclaration classDec]:
+        'class' className = ID {
+            Identifier id = new Identifier(className);
+            $classDec = new classDeclaration(className, Null);
+            MainMethodDeclaration mainMethodDec = new MainMethodDeclaration();
+            prog.setMainClass(mainMethodDec);
+        }
+        '{' 'def' methodname = ID '(' ')' ':' 'int' '{'  statements 'return' expression ';' '}' '}';
+
+    classDeclaration returns [ClassDeclaration classDec]:
+        'class' classname = ID ('extends' parentname = ID)?
+        {
+            Identifier classid = new Identifier(classname);
+            Identifier parentclassid = new Identifier(parentname);
+            $classDec = new ClassDeclaration(classid, parentclassid);
+        }
+        '{' (varDeclaration)* (methodDeclaration)* '}'
     ;
-    classDeclaration:
-        'class' ID ('extends' ID)? '{' (varDeclaration)* (methodDeclaration)* '}'
+    varDeclaration returns [VarDeclaration varDeclaration]:
+        'var' name = ID ':' t = type ';' 
+        {
+            Identifier id = new Identifier(name);
+            $varDeclaration = new VarDeclaration(id, $t)
+
+        }
     ;
-    varDeclaration:
-        'var' ID ':' type ';'
+    methodDeclaration returns[MethodDeclaration methodDeclaration]:
+        'def' methodname = ID{
+            Identifier id = new Identifier(methodname);
+            methodDeclaration = new MethodDeclaration(id);
+        }
+        ('(' ')' | ('(' ID ':' type (',' ID ':' type)* ')')) ':' type '{'  varDeclaration* statements 'return' expression ';' '}'
+ 
     ;
-    methodDeclaration:
-        'def' ID ('(' ')' | ('(' ID ':' type (',' ID ':' type)* ')')) ':' type '{'  varDeclaration* statements 'return' expression ';' '}'
+    statements returns [ArrayList<Statement> multipleStatements]:
+        {ArrayList<Statement> multipleStatements = new ArrayList<>();}
+        (stm = statement{multipleStatements.add($stm.stm);})*
     ;
-    statements:
-        (statement)*
-    ;
-    statement:
+    statement returns[Statement stm]:
         statementBlock |
         statementCondition |
         statementLoop |
         statementWrite |
         statementAssignment
     ;
-    statementBlock:
+    statementBlock returns [ArrayList<Statement> multipleStatements]:
         '{'  statements '}'
     ;
-    statementCondition:
-        'if' '('expression')' 'then' statement ('else' statement)?
+    statementCondition returns [Conditional conditional]:
+        'if' '('expr = expression')' 'then' cst = statement ('else' statement)?
+        {
+            $conditional = new Conditional($expr.expr, $cst.stm);
+        }
     ;
-    statementLoop:
-        'while' '(' expression ')' statement
+    statementLoop returns [While while]:
+        'while' '(' expr = expression ')' st = statement {
+            Expression condition, Statement body
+            $while = new While($expr.expr, $st.stm);
+        }
     ;
-    statementWrite:
-        'writeln(' expression ')' ';'
+    statementWrite returns [Write stm_write]:
+        'writeln(' expr = expression ')' ';' {$stm_write = new Write($expr.expr);} 
     ;
     statementAssignment:
         expression ';'
     ;
 
-    expression:
+    expression returns [Expression expr]:
 		expressionAssignment
 	;
 
     expressionAssignment:
-		expressionOr '=' expressionAssignment
+		expressionOr '='
 	    |	expressionOr
 	;
 
@@ -124,31 +165,39 @@ grammar Smoola;
 	    '.' (ID '(' ')' | ID '(' (expression (',' expression)*) ')' | 'length') expressionMethodsTemp
 	    |
 	;
-    expressionOther:
+    expressionOther returns [Expression expr]:
 		CONST_NUM
         |	CONST_STR
-        |   'new ' 'int' '[' expression ']'
-        |   'new ' ID '(' ')'
-        |   'this'
-        |   'true'
-        |   'false'
-        |	ID
-        |   ID '[' expression ']'
-        |	'(' expression ')'
+        |   'new ' 'int' '[' exp = expression ']'{$expr = new NewArray();
+                                                  $expr.setExpression($exp.expr);
+                                                 }
+        |   'new ' name = ID '(' ')' {
+            Identifier id = new Identifier(name);
+            $expr = new NewClass(id);}
+        |   'this' { $expr = new This();}
+        |   const = 'true' {BooleanType bt = new BooleanType(); $expr = new BooleanValue(const, bt);}
+        |   const = 'false'{BooleanType bt = new BooleanType(); $expr = new BooleanValue(const, bt);}
+        |	id = ID {$expr = new Identifier(id);}
+        |   id = ID '[' exp = expression ']' 
+            {     
+                Identifier identifier = new Identifier(id);
+                $expr = new ArrayCall(identifier, $exp.expr);
+            }
+        |	'(' thisexpr = expression ')' {$expr = thisexpr.expr;} 
 	;
-	type:
-	    'int' |
-	    'boolean' |
-	    'string' |
-	    'int' '[' ']' |
-	    ID
+	type returns [Type t]:
+	    'int' {$type = new IntType();}|
+	    'boolean' {$type = new BooleanType();}|
+	    'string' {$type = new StringType();}|
+	    'int' '[' ']' {$type = new ArrayType();}|
+	    ID {$type = new UserDefinedType();}
 	;
     CONST_NUM:
-		[0-9]+
+		[0-9]+ 
 	;
 
     CONST_STR:
-		'"' ~('\r' | '\n' | '"')* '"'
+		('"') (~('\r' | '\n' | '"')*) ('"') 
 	;
     NL:
 		'\r'? '\n' -> skip
