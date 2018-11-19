@@ -20,18 +20,28 @@ grammar Smoola;
             Identifier id = new Identifier(className);
             $classDec = new classDeclaration(className, Null);
             MainMethodDeclaration mainMethodDec = new MainMethodDeclaration();
-            prog.setMainClass(mainMethodDec);
         }
-        '{' 'def' methodname = ID '(' ')' ':' 'int' '{'  statements 'return' expression ';' '}' '}';
+        '{' 'def' methodname = ID '(' ')' ':' 'int' '{'  stms = statements{
+            for (int i = 0; i < stms.size(); i++) {
+                mainMethodDec.addStatement(stms.get(i));
+		    }
+         }
+         'return' retexp = expression  
+         {  mainMethodDec.setReturnValue($retexp.expr);
+            mainClass.addMethodDeclaration(mainMethod);
+            prog.setMainClass(mainClass);}';' '}' '}'
+         ;
 
     classDeclaration returns [ClassDeclaration classDec]:
         'class' classname = ID ('extends' parentname = ID)?
         {
             Identifier classid = new Identifier(classname);
             Identifier parentclassid = new Identifier(parentname);
-            $classDec = new ClassDeclaration(classid, parentclassid);
+            classDecObj = new ClassDeclaration(classid, parentclassid);
         }
-        '{' (varDeclaration)* (methodDeclaration)* '}'
+        '{' (vardec = varDeclaration {classDecObj.addVarDeclaration($vardec.varDec);})* 
+            (methoddec = methodDeclaration {classDecObj.addMethodDeclaration($methoddec.methodDec);})* '}'
+        {$classDec = classDecObj;}    // not sure
     ;
     varDeclaration returns [VarDeclaration varDec]:
         'var' name = ID ':' t = type ';' 
@@ -46,7 +56,25 @@ grammar Smoola;
             Identifier id = new Identifier(methodname);
             methodDeclaration = new MethodDeclaration(id);
         }
-        ('(' ')' | ('(' ID ':' type (',' ID ':' type)* ')')) ':' type '{'  varDeclaration* statements 'return' expression ';' '}'
+        ('(' ')' | ('(' id = ID ':' tp = type {   
+            Identifier vardecid = new Identifier(id);
+            VarDeclaration arg = new VarDeclaration(vardecid, $tp.t);
+            methodDeclaration.addArg(arg);}
+        (',' id = ID ':' tp = type
+        {
+            Identifier vardecid = new Identifier(id);
+            VarDeclaration arg = new VarDeclaration(vardecid, $tp.t);
+            methodDeclaration.addArg(arg);
+        })* ')')) ':' 
+        rettype = type '{' { methodDeclaration.setReturnValue($rettype.t); }
+        (vardec = varDeclaration { methodDeclaration.addLocalVar($vardec.varDec); })*
+        stms = statements {
+            for(int i = 0; i < stms.size(); i++){
+                methodDeclaration.addStatement(stms.get(i));
+            }
+        }
+        'return' retvalexpr = expression {methodDeclaration.setReturnValue($retvalexpr.expr);}';' '}'
+        {$methodDec = methodDeclaration;} /// not sure
  
     ;
     statements returns [ArrayList<Statement> multipleStatements]:
@@ -61,10 +89,10 @@ grammar Smoola;
         statementAssignment
     ;
     statementBlock returns [ArrayList<Statement> multipleStatements]:
-        '{'  statements '}'
+        '{'  stms = statements {$multipleStatements = $stms.multipleStatements;} '}' // not sure about shallow copying
     ;
-    statementCondition returns [Conditional conditional]:
-        'if' '('expr = expression')' 'then' cst = statement ('else' statement)?
+    statementCondition returns [Conditional conditional]: // incomplete
+        'if' '('expr = expression')' 'then' cst = statement ('else' ast = statement)?
         {
             $conditional = new Conditional($expr.expr, $cst.stm);
         }
@@ -175,8 +203,8 @@ grammar Smoola;
             Identifier id = new Identifier(name);
             $expr = new NewClass(id);}
         |   'this' { $expr = new This();}
-        |   const = 'true' {BooleanType bt = new BooleanType(); $expr = new BooleanValue(const, bt);}
-        |   const = 'false'{BooleanType bt = new BooleanType(); $expr = new BooleanValue(const, bt);}
+        |   constval = 'true' {BooleanType bt = new BooleanType(); $expr = new BooleanValue(constval, bt);}
+        |   constval = 'false'{BooleanType bt = new BooleanType(); $expr = new BooleanValue(constval, bt);}
         |	id = ID {$expr = new Identifier(id);}
         |   id = ID '[' exp = expression ']' 
             {     
