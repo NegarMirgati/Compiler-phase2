@@ -108,65 +108,84 @@ grammar Smoola;
         }
     ;
 
-    expression returns [Expression expr]:
-		exp = expressionAssignment {}
+    expression returns [Expression lvalue, Expression rvalue, Expression expr]:
+		retval = expressionAssignment {
+            rval = $retval.rvalue;
+            lval = $retval.lvalue;
+            exp = $retval.expr;
+            if($lvalue == Null && $rvalue == Null){
+                $expr = exp.expr;
+                $lvalue = Null;
+                $rvalue = Null;
+                }
+            else{
+                $lvalue = lval.expr;
+                $rvalue = rval.expr;
+                $expr = exp.expr;
+            }
+        }
 	;
 
-    expressionAssignment:
-		expr_lvalue = expressionOr '=' {}
-	    |	expressionOr
+    expressionAssignment returns [Expression lvalue, expression rvalue, Expression expr]:
+		 expr_lvalue = expressionOr '=' expr_rvalue = expressionAssignment {
+             $lvalue = $expr_lvalue.expr; $rvalue = $expr_rvalue.expr; 
+             BinaryOperator bo = new BinaryOperator("="); // not sure
+             BineryExpression be = new BinaryExpression($expr_lvalue.expr, $expr_rvalue.expr, bo);
+             $expr = be;
+         }
+         | exp = expressionOr {$expr = exp.expr; $rvalue = Null; $lvalue = Null;}
 	;
 
-    expressionOr:
-		expressionAnd expressionOrTemp
+    expressionOr returns [Expression expr]:
+		lvalue = expressionAnd expressionOrTemp[$lvalue]
 	;
 
-    expressionOrTemp:
-		'||' expressionAnd expressionOrTemp
+    expressionOrTemp[lvalue]:
+		'||' expressionAnd expressionOrTemp[this_lvalue]
 	    |
 	;
 
-    expressionAnd:
+    expressionAnd returns []:
 		expressionEq expressionAndTemp
 	;
 
-    expressionAndTemp:
+    expressionAndTemp returns []:
 		'&&' expressionEq expressionAndTemp
 	    |
 	;
 
-    expressionEq:
-		expressionCmp expressionEqTemp
+    expressionEq returns []:
+		lvalue = expressionCmp expressionEqTemp[$lvalue.expr]
 	;
 
-    expressionEqTemp:
-		('==' | '<>') expressionCmp expressionEqTemp
+    expressionEqTemp[Expression lvaue] returns []:
+		('==' | '<>') expressionCmp expressionEqTemp[$this_lvalue]
 	    |
 	;
 
     expressionCmp:
-		expressionAdd expressionCmpTemp
+		lvalue = expressionAdd expressionCmpTemp
 	;
 
-    expressionCmpTemp:
+    expressionCmpTemp[Expression lvalue]:
 		('<' | '>') expressionAdd expressionCmpTemp
 	    |
 	;
 
     expressionAdd:
-		expressionMult expressionAddTemp
+		lvalue = expressionMult expressionAddTemp
 	;
 
-    expressionAddTemp:
+    expressionAddTemp[Expression lvalue]:
 		('+' | '-') expressionMult expressionAddTemp
 	    |
 	;
 
         expressionMult:
-		expressionUnary expressionMultTemp
+		lvalue = expressionUnary expressionMultTemp
 	;
 
-    expressionMultTemp:
+    expressionMultTemp[Expression lvalue]:
 		('*' | '/') expressionUnary expressionMultTemp
 	    |
 	;
