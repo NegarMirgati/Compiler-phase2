@@ -82,20 +82,19 @@ grammar Smoola;
         (stm = statement{multipleStatements.add($stm.stm);})*
     ;
     statement returns[Statement stm]:
-        statementBlock |
-        statementCondition |
-        statementLoop |
-        statementWrite |
-        statementAssignment
+        st = statementBlock {$stm = st.multipleStatements;} |
+        st = statementCondition {$stm = st.conditional;} |
+        st = statementLoop {$stm = st.while;} |
+        st = statementWrite {$stm = st.stm_write;} |
+        st = statementAssignment   {$stm = st.stm;}
+      
     ;
     statementBlock returns [ArrayList<Statement> multipleStatements]:
         '{'  stms = statements {$multipleStatements = $stms.multipleStatements;} '}' // not sure about shallow copying
     ;
     statementCondition returns [Conditional conditional]: // incomplete
-        'if' '('expr = expression')' 'then' cst = statement ('else' ast = statement)?
-        {
-            $conditional = new Conditional($expr.expr, $cst.stm);
-        }
+        'if' '('expr = expression')' {}'then' cst = statement ('else' ast = statement {})?
+      
     ;
     statementLoop returns [While while]:
         'while' '(' expr = expression ')' st = statement {
@@ -106,12 +105,12 @@ grammar Smoola;
     statementWrite returns [Write stm_write]:
         'writeln(' expr = expression ')' ';' {$stm_write = new Write($expr.expr);} 
     ;
-    statementAssignment:
-        expression ';'
+    statementAssignment returns [Assign assign]:
+        expr = expression ';'
     ;
 
     expression returns [Expression expr]:
-		expressionAssignment
+		exp = expressionAssignment {}
 	;
 
     expressionAssignment:
@@ -193,26 +192,60 @@ grammar Smoola;
 	    '.' (ID '(' ')' | ID '(' (expression (',' expression)*) ')' | 'length') expressionMethodsTemp
 	    |
 	;
-    expressionOther returns [Expression expr]:
-		CONST_NUM
-        |	CONST_STR
-        |   'new ' 'int' '[' exp = expression ']'{$expr = new NewArray();
-                                                  $expr.setExpression($exp.expr);
-                                                 }
+    expressionOther returns [Expression expr, Expression rvalue, Expression lvalue]:
+		num = CONST_NUM
+        {   
+                IntType t = new IntType();
+                IntValue intval = new IntValue(t, $num.int);
+                $expr  = intval;
+                $rvalue = Null;
+                $lvalue = Null;
+            }
+        |	str = CONST_STR {
+            StringType st = new StringType();
+            StringValue strval = new StringValue(st, $str.); // str.?
+            $expr = strva;
+            $rvalue = Null;
+            $lvalue = Null;
+        }
+            
+        |   'new ' 'int' '[' exp = expression ']'
+            {   
+                $expr = new NewArray();
+                $expr.setExpression($exp.expr);
+            }
         |   'new ' name = ID '(' ')' {
             Identifier id = new Identifier(name);
-            $expr = new NewClass(id);}
+            $expr = new NewClass(id);
+            $rvalue = Null;
+            $lvalue = Null;
+            }
         |   'this' { $expr = new This();}
-        |   constval = 'true' {BooleanType bt = new BooleanType(); $expr = new BooleanValue(constval, bt);}
+        |   constval = 'true' {
+                                BooleanType bt = new BooleanType(); 
+                                $expr = new BooleanValue(constval, bt); 
+                                $rvalue = Null;
+                                $lvalue = Null;
+                             }
         |   constval = 'false'{BooleanType bt = new BooleanType(); $expr = new BooleanValue(constval, bt);}
         |	id = ID {$expr = new Identifier(id);}
         |   id = ID '[' exp = expression ']' 
             {     
                 Identifier identifier = new Identifier(id);
                 $expr = new ArrayCall(identifier, $exp.expr);
+                $rvalue = Null;
+                $lvalue = Null;
             }
-        |	'(' thisexpr = expression ')' {$expr = thisexpr.expr;} 
+        |	'(' thisexpr = expression ')' {
+            if($expr = Null){ // this is a binary expression so we return lvalue and rvalue 
+                $lvalue = thisexpr.lvaue;
+                $rvalue = thisexpr.rvalue;
+            }
+            else $expr = thisexpr.expr;
+            }
+
 	;
+
 	type returns [Type t]:
 	    'int' {$t = new IntType();}|
 	    'boolean' {$t = new BooleanType();}|
@@ -220,6 +253,7 @@ grammar Smoola;
 	    'int' '[' ']' {$t = new ArrayType();}|
 	    ID {$t = new UserDefinedType();}
 	;
+
     CONST_NUM:
 		[0-9]+ 
 	;
