@@ -135,82 +135,137 @@ grammar Smoola;
     expressionAssignment returns [Expression lvalue, expression rvalue, Expression expr]:
 		 expr_lvalue = expressionOr '=' expr_rvalue = expressionAssignment {
              $lvalue = $expr_lvalue.expr; $rvalue = $expr_rvalue.expr; 
-             BinaryOperator bo = new BinaryOperator("="); // not sure
+             BinaryOperator bo = BinaryOperator.assign;
              BineryExpression be = new BinaryExpression($expr_lvalue.expr, $expr_rvalue.expr, bo);
              $expr = be;
          }
          | exp = expressionOr {$expr = exp.expr; $rvalue = Null; $lvalue = Null;}
 	;
 
-    expressionOr returns [Expression expr]:
-		lvalue = expressionAnd expressionOrTemp[$lvalue]
+    expressionOr returns [Expression expr, BinaryOperator be]:
+		lvalue = expressionAnd rvalue = expressionOrTemp{
+            if($rvalue.expr != Null){
+                $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
+            }
+            else{
+                expr = $lvalue.expr;
+            }
+        }
 	;
 
-    expressionOrTemp[lvalue]:
-		'||' expressionAnd expressionOrTemp[this_lvalue]
+    expressionOrTemp returns [Expression expr, BinaryOperator bo]:
+		'||'{$bo = BinaryOperator.or;} expr1 = expressionAnd epxr2 = expressionOrTemp
+        {$expr= new BinaryExpression($expr1.expr, $expr2.expr, $expr2.be);}
 	    |
 	;
 
-    expressionAnd returns []:
-		expressionEq expressionAndTemp
+    expressionAnd returns [Expression expr]:
+		lvalue = expressionEq rvalue = expressionAndTemp
+        {
+            if($rvalue.expr != Null){
+                $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
+        }
+            else{
+                $expr = $lvalue.expr;
+            }
+        }
 	;
 
-    expressionAndTemp returns []:
-		'&&' expressionEq expressionAndTemp
+    expressionAndTemp returns [Expression expr, BinaryOperator bo]:
+		'&&'{$bo = BinaryOperator.and;} expr1 = expressionEq expr2 = expressionAndTemp
+        {$expr = new BinaryExpression($expr1.expr, $expr2.expr, $expr2.bo);}
 	    |
 	;
 
-    expressionEq returns []:
-		lvalue = expressionCmp expressionEqTemp[$lvalue.expr]
+    expressionEq returns [Expression expr]:
+		lvalue = expressionCmp rvalue = expressionEqTemp {
+            if($rvalue.expr != Null){
+                $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
+        }
+            else{
+                $expr = $lvalue.expr;
+            }
+        }
 	;
 
-    expressionEqTemp[Expression lvaue] returns []:
-		('==' | '<>') expressionCmp expressionEqTemp[$this_lvalue]
+    expressionEqTemp returns [Expression expr, BinaryOperator bo]:
+		('=='{$bo = BinaryOperator.eq;} | '<>' {$bo = BinaryOperator.neq;}) 
+        expr1 = expressionCmp expr2 = expressionEqTemp 
+        {$expr = new BinaryExpression($expr1.expr, $expr2.expr, $expr2.bo);}
 	    |
 	;
 
-    expressionCmp:
-		lvalue = expressionAdd expressionCmpTemp
+    expressionCmp returns [Expression expr]:
+		lvalue = expressionAdd rvalue = expressionCmpTemp{
+            if($rvalue.expr != Null){
+                $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
+        }
+            else{
+                $expr = $lvalue.expr;
+            }
+        }
 	;
 
-    expressionCmpTemp[Expression lvalue]:
-		('<' | '>') expressionAdd expressionCmpTemp
+    expressionCmpTemp returns [Expression expr, BinaryOperator bo]:
+		('<' {$bo = BinaryOperator.lt;} | '>' {$bo = BinaryOperator.bt;}) 
+        expr1 = expressionAdd expr2 = expressionCmpTemp 
+        {$expr = new BinaryExpression($expr1.expr, $expr2.expr, $expr2.bo);}
 	    |
 	;
 
-    expressionAdd:
-		lvalue = expressionMult expressionAddTemp
+    expressionAdd returns [Expression expr]:
+		lvalue = expressionMult rvalue = expressionAddTemp{
+            if($rvalue.expr != Null){
+                $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
+        }
+            else{
+                $expr = $lvalue.expr;
+            }
+        }
 	;
 
-    expressionAddTemp[Expression lvalue]:
-		('+' | '-') expressionMult expressionAddTemp
+    expressionAddTemp returns [Expression expr, BinaryOperator bo]:
+		('+'{$bo = BinaryOperator.add;} | '-'{$bo = BinaryOperator.sub;}) 
+        expr1 = expressionMult expr2 =  expressionAddTemp
+        {$bo = new BinaryOperator($expr1.expr, $expr2.expr, $expr2.bo);}
 	    |
 	;
 
-        expressionMult:
-		lvalue = expressionUnary expressionMultTemp
+        expressionMult returns [Expression expr]:
+		lvalue = expressionUnary rvalue = expressionMultTemp{
+            if($rvalue.expr != Null){
+                $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
+        }
+            else{
+                $expr = $lvalue.expr;
+            }
+        }
 	;
 
-    expressionMultTemp[Expression lvalue]:
-		('*' | '/') expressionUnary expressionMultTemp
+    expressionMultTemp returns [Expression expr, BinaryOperator bo]:
+		('*' {$bo = BinaryOperator.mult;}| '/'{$bo = BinaryOperator.div;}) 
+        expr1 = expressionUnary expr2 = expressionMultTemp
+        {$expr = new BinaryExpression($expr1.expr, $expr2.expr, $expr2.bo;);}
 	    |
 	;
 
-    expressionUnary:
-		('!' | '-') expressionUnary
-	    |	expressionMem
+    expressionUnary returns [Expression expr]:
+		('!' {UnaryOperator uo = UnaryOperator.not;} | '-' {UnaryOperator uo = UnaryOperator.sub;}) exp = expressionUnary
+        {$expr = new UnaryExpression(uo, $exp.expr);}
+	    |	exp = expressionMem {$expr = $exp.expr;}
 	;
 
-    expressionMem:
-		instance = expressionMethods expr_mem = expressionMemTemp
+    expressionMem returns [Expression expr]:
+		instance = expressionMethods index = expressionMemTemp
+        {$expr = new ArrayCall($instance.expr, $index.expr);}
 	;
 
     expressionMemTemp returns [Expression expr]:
-		'[' exp = expression ']' { $expr = exp.expr; }
+		'[' index = expression ']' {$expr = $index;}
 	    |
 	;
-	expressionMethods:
-	    instance = expressionOther expressionMethodsTemp[$instance]
+	expressionMethods returns [Expression expr]: // not sure
+	    instance = expressionOther methodcall = expressionMethodsTemp[instance] {$expr = $methodcall.expr;}
 	;
 	expressionMethodsTemp[Expression instance] returns [MethodCall methodcall]:
 	    '.'  ((methodname = ID '(' ')'{   
@@ -227,7 +282,7 @@ grammar Smoola;
 	    |
 	; // incomplete
 
-    expressionOther returns [Expression expr]:
+    expressionOther returns [Expression expr، Expression lvalue , Expression rvalue]:
 		num = CONST_NUM
         {   
                 IntType t = new IntType();
