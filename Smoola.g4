@@ -72,19 +72,30 @@ grammar Smoola;
  
     ;
     statements returns [ArrayList<Statement> multipleStatements]:
-        {ArrayList<Statement> multipleStatements = new ArrayList<>();}
-        (stm = statement{ $multipleStatements.add($stm.stm); })*
+        {$multipleStatements = new ArrayList<>();}
+        (stm = statement
+        { 
+            for(int i = 0; i < $stm.multipleStatements.size(); i++){
+                multipleStatements.add($stm.multipleStatements.get(i));
+            }
+        })*
     ;
     statement returns[Statement stm]:
-        st = statementBlock {$stm = $st.multipleStatements;} |
-        st = statementCondition {$stm = $st.conditional;} |
+        st = statementBlock {$stm = $st.block;} |
+        st = statementCondition {$stm = $st.condition;} |
         st = statementLoop {$stm = $st.while;} |
         st = statementWrite {$stm = $st.stm_write;} |
-        st = statementAssignment   {$stm = $st.stm;}
+        st = statementAssignment {$stm = ($st.stm);}
       
     ;
-    statementBlock returns [ArrayList<Statement> multipleStatements]:
-        '{' stms = statements {$multipleStatements = $stms.multipleStatements;} '}' // not sure about shallow copying
+    statementBlock returns [Block block]:
+        '{' {$block = new Block();}
+        stms = statements {
+            for(int i = 0 ; i < $stms.multipleStatements.size(); i ++ ){
+                $block.addStatement($stms.multipleStatements.get(i));
+            }
+        } 
+        '}' 
     ;
     statementCondition returns [Conditional conditional]:
         'if' '('expr = expression')' 'then' cst = statement {Conditional cond = new Conditional($expr.expr, $cst.stm;);}('else' ast = statement {cond.setAlternativeBody($ast.stm);})?
