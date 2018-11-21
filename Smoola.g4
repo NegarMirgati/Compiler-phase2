@@ -73,12 +73,7 @@ grammar Smoola;
     ;
     statements returns [ArrayList<Statement> multipleStatements]:
         {$multipleStatements = new ArrayList<>();}
-        (stm = statement
-        { 
-            for(int i = 0; i < $stm.multipleStatements.size(); i++){
-                multipleStatements.add($stm.multipleStatements.get(i));
-            }
-        })*
+        (stm = statement{$multipleStatements.add($stm.stm);})*
     ;
     statement returns[Statement stm]:
         st = statementBlock {$stm = $st.block;} |
