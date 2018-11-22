@@ -1,6 +1,15 @@
 grammar Smoola;
 @header { 
-    import src.main.ast.program;
+    import ast.*;
+    import ast.node.*;
+    import ast.node.expression.*;
+    import ast.node.expression.Value.*;
+    import ast.node.statement.*;
+    import ast.node.declaration.*;
+    import ast.Type.*;
+    import ast.Type.ArrayType.*;
+    import ast.Type.UserDefinedType.*;
+    import ast.Type.PrimitiveType.*;
     import java.util.ArrayList;
 }
 
@@ -11,11 +20,15 @@ grammar Smoola;
     mainClass [Program prog] returns [ClassDeclaration main]:
         'class' className = ID {
             Identifier id = new Identifier($className.text);
-            $main = new classDeclaration(id, null);
-            MainMethodDeclaration mainMethodDec = new MainMethodDeclaration();
+            $main = new ClassDeclaration(id, null);
         }
         '{' 'def' methodname = ID '(' ')' ':' 'int' 
-        {IntType t = new IntType(); mainMethodDec.setReturnType(t);}
+        {
+            Identifier mid = new Identifier($methodname.text);
+            MethodDeclaration mainMethodDec = new MethodDeclaration(mid);
+            IntType t = new IntType(); mainMethodDec.setReturnType(t);
+
+            }
         '{'  stms = statements{
             for (int i = 0; i < ($stms.multipleStatements).size(); i++) {
                 mainMethodDec.addStatement($stms.multipleStatements.get(i));
@@ -53,27 +66,26 @@ grammar Smoola;
     methodDeclaration returns[MethodDeclaration methodDec]:
         'def' methodname = ID{
             Identifier id = new Identifier($methodname.text);
-            methodDeclaration = new MethodDeclaration(id);
+            $methodDec = new MethodDeclaration(id);
         }
         ('(' ')' | ('(' id = ID ':' tp = type {   
             Identifier vardecid = new Identifier($id.text);
             VarDeclaration arg = new VarDeclaration(vardecid, $tp.t);
-            methodDeclaration.addArg(arg);}
+            $methodDec.addArg(arg);}
         (',' id = ID ':' tp = type
         {
-            Identifier vardecid = new Identifier($id.text);
-            VarDeclaration arg = new VarDeclaration(vardecid, $tp.t);
-            methodDeclaration.addArg(arg);
+            Identifier vardecid2 = new Identifier($id.text);
+            VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
+            $methodDec.addArg(arg2);
         })* ')')) ':' 
-        rettype = type '{' { methodDeclaration.setReturnType($rettype.t); }
-        (vardec = varDeclaration { methodDeclaration.addLocalVar($vardec.varDec); })*
+        rettype = type '{' { $methodDec.setReturnType($rettype.t); }
+        (vardec = varDeclaration { $methodDec.addLocalVar($vardec.varDec); })*
         stms = statements {
             for(int i = 0; i < $stms.multipleStatements.size(); i++){
-                methodDeclaration.addStatement($stms.multipleStatements.get(i));
+                $methodDec.addStatement($stms.multipleStatements.get(i));
             }
         }
-        'return' retvalexpr = expression {methodDeclaration.setReturnValue($retvalexpr.expr);}';' '}'
-        {$methodDec = methodDeclaration;}
+        'return' retvalexpr = expression {$methodDec.setReturnValue($retvalexpr.expr);}';' '}'
  
     ;
     statements returns [ArrayList<Statement> multipleStatements]:
@@ -115,7 +127,7 @@ grammar Smoola;
     statementAssignment returns [Assign assign]:
         expr = expression ';'
         {
-            if(expr.lvalue != null && expr.rvalue != null){
+            if($expr.lvalue != null && $expr.rvalue != null){
 
                 $assign = new Assign($expr.lvalue, $expr.rvalue);
             }
@@ -124,9 +136,9 @@ grammar Smoola;
 
     expression returns [Expression lvalue, Expression rvalue, Expression expr]:
 		retval = expressionAssignment {
-            rval = $retval.rvalue;
-            lval = $retval.lvalue;
-            exp = $retval.expr;
+            $rvalue = $retval.rvalue;
+            $lvalue = $retval.lvalue;
+            $expr = $retval.expr;
         }
 	;
 
@@ -137,7 +149,7 @@ grammar Smoola;
              BineryExpression be = new BinaryExpression($expr_lvalue.expr, $expr_rvalue.expr, bo);
              $expr = be;
          }
-         | exp = expressionOr {$expr = exp.expr; $rvalue = null; $lvalue = null;}
+         | exp = expressionOr {$expr = $exp.expr; $rvalue = null; $lvalue = null;}
 	;
 
     expressionOr returns [Expression expr, BinaryOperator be]:
@@ -146,7 +158,7 @@ grammar Smoola;
                 $expr = new BinaryExpression($lvalue.expr, $rvalue.expr, $rvalue.bo);
             }
             else{
-                expr = $lvalue.expr;
+                $expr = $lvalue.expr;
             }
         }
 	;
@@ -205,7 +217,7 @@ grammar Smoola;
 	;
 
     expressionCmpTemp returns [Expression expr, BinaryOperator bo]:
-		('<' {$bo = BinaryOperator.lt;} | '>' {$bo = BinaryOperator.bt;}) 
+		('<' {$bo = BinaryOperator.lt;} | '>' {$bo = BinaryOperator.gt;}) 
         expr1 = expressionAdd expr2 = expressionCmpTemp 
         {$expr = new BinaryExpression($expr1.expr, $expr2.expr, $expr2.bo);}
 	    |
@@ -246,7 +258,8 @@ grammar Smoola;
 	;
 
     expressionUnary returns [Expression expr]:
-		('!' {UnaryOperator uo = UnaryOperator.not;} | '-' {UnaryOperator uo = UnaryOperator.sub;}) exp = expressionUnary
+		('!' {UnaryOperator uo = UnaryOperator.not;} | '-' {UnaryOperator uo = UnaryOperator.minus;}) 
+        exp = expressionUnary
         {$expr = new UnaryExpression(uo, $exp.expr);}
 	    |	exp1 = expressionMem {$expr = $exp1.expr;}
 	;
@@ -261,20 +274,20 @@ grammar Smoola;
 	    |
 	;
 	expressionMethods returns [Expression expr]: // not sure
-	    instance = expressionOther methodcall = expressionMethodsTemp[instance] {$expr = $methodcall.methodcall;}
+	    instance = expressionOther methodcall = expressionMethodsTemp[$instance.expr] {$expr = $methodcall.methodcall;}
 	;
 	expressionMethodsTemp [Expression instance] returns [MethodCall methodcall]:
 	    '.'  ((methodname = ID '(' ')'{   
                 Identifier id = new Identifier($methodname.text);
-                mc = new MethodCall(instance, id);
+                $methodcall = new MethodCall(instance, id);
             }) 
         | methodname = ID '(' {
                 Identifier id = new Identifier($methodname.text);
-                mc = new MethodCall(instance, id);
+                $methodcall = new MethodCall(instance, id);
             }
-        (arg = expression {mc.addArg(arg.expr);} (',' arg = expression {mc.addArg(arg.expr);})*) ')' 
+        (arg = expression {$methodcall.addArg($arg.expr);} (',' arg = expression {$methodcall.addArg($arg.expr);})*) ')' 
         | 'length' {Length len = new Length(instance); }) 
-        expressionMethodsTemp[this_instance]
+        expressionMethodsTemp[$instance]
 	    |
 	; // incomplete
 
@@ -282,7 +295,7 @@ grammar Smoola;
 
 		num = CONST_NUM{   
                 IntType t = new IntType();
-                Expression temp_expr = new IntValue(t, $num.int);
+                Expression temp_expr = new IntValue($num.int, t);
                 $expr = temp_expr;
             }
         |	str = CONST_STR {
@@ -294,7 +307,7 @@ grammar Smoola;
             {   
                 $expr = new NewArray();
                 IntValue val = new IntValue($num.int);
-                expr.setExpression(val);
+                $expr = val;
             }
         |   'new ' name = ID '(' ')' {
             Identifier id = new Identifier($name.text);
@@ -315,9 +328,9 @@ grammar Smoola;
                 $expr = new ArrayCall(identifier, $exp.expr);
             }
         |	'(' thisexpr = expression ')' {
-                $lvalue = thisexpr.lvaue;
-                $rvalue = thisexpr.rvalue;
-                $expr = thisexpr.expr;
+                $lvalue = $thisexpr.lvalue;
+                $rvalue = $thisexpr.rvalue;
+                $expr = $thisexpr.expr;
             }
 	;
 
