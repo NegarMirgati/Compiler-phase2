@@ -14,7 +14,9 @@ grammar Smoola;
 }
 
     program:
-        {Program prog = new Program();} mainClass[prog] (classDeclaration[prog])* EOF 
+        {Program prog = new Program();
+	 VisitorImpl v = new VisitorImpl();
+        prog.accept(v);} mainClass[prog] (classDeclaration[prog])* EOF 
     ;
 
     mainClass [Program prog] returns [ClassDeclaration main]:
