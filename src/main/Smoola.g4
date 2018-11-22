@@ -142,11 +142,11 @@ grammar Smoola;
         }
 	;
 
-    expressionAssignment returns [Expression lvalue, expression rvalue, Expression expr]:
+    expressionAssignment returns [Expression lvalue, Expression rvalue, Expression expr]:
 		 expr_lvalue = expressionOr '=' expr_rvalue = expressionAssignment {
              $lvalue = $expr_lvalue.expr; $rvalue = $expr_rvalue.expr; 
              BinaryOperator bo = BinaryOperator.assign;
-             BineryExpression be = new BinaryExpression($expr_lvalue.expr, $expr_rvalue.expr, bo);
+             BinaryExpression be = new BinaryExpression($expr_lvalue.expr, $expr_rvalue.expr, bo);
              $expr = be;
          }
          | exp = expressionOr {$expr = $exp.expr; $rvalue = null; $lvalue = null;}
@@ -258,10 +258,9 @@ grammar Smoola;
 	;
 
     expressionUnary returns [Expression expr]:
-		('!' {UnaryOperator uo = UnaryOperator.not;} | '-' {UnaryOperator uo = UnaryOperator.minus;}) 
-        exp = expressionUnary
-        {$expr = new UnaryExpression(uo, $exp.expr);}
-	    |	exp1 = expressionMem {$expr = $exp1.expr;}
+		 ('!'  exp = expressionUnary) {UnaryOperator uo = UnaryOperator.not; $expr = new UnaryExpression(uo, $exp.expr);}
+         | ('-'  exp1 = expressionUnary) {UnaryOperator uo1 = UnaryOperator.minus; $expr = new UnaryExpression(uo1, $exp1.expr);} 
+         |	exp2 = expressionMem {$expr = $exp2.expr;}
 	;
 
     expressionMem returns [Expression expr]:
@@ -300,13 +299,14 @@ grammar Smoola;
             }
         |	str = CONST_STR {
             StringType st = new StringType();
-            $expr = new StringValue(st, $str.text);
+            $expr = new StringValue($str.text, st);
         }
             
         | 'new ' 'int' '[' num = CONST_NUM ']'
             {   
                 $expr = new NewArray();
-                IntValue val = new IntValue($num.int);
+                IntType t = new IntType();
+                IntValue val = new IntValue($num.int, t);
                 $expr = val;
             }
         |   'new ' name = ID '(' ')' {
@@ -316,10 +316,10 @@ grammar Smoola;
         |   'this' { $expr = new This();}
         |   constval = 'true' {
                                 BooleanType bt = new BooleanType(); 
-                                $expr = new BooleanValue($constval.text, bt); 
+                                $expr = new BooleanValue(true, bt); 
                              }
         |   constval = 'false'{ BooleanType bt = new BooleanType();
-                                $expr = new BooleanValue($constval.text, bt);
+                                $expr = new BooleanValue(false, bt);
                                 }
         |	id = ID {$expr = new Identifier($id.text);}
         |   id = ID '[' exp = expression ']' 
