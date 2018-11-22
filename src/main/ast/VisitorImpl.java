@@ -1,7 +1,10 @@
 package ast;
+package symbolTable;
 
+import ast.node.Node;
 import ast.node.Program;
 import ast.node.declaration.ClassDeclaration;
+import ast.node.declaration.MainMethodDeclaration;
 import ast.node.declaration.MethodDeclaration;
 import ast.node.declaration.VarDeclaration;
 import ast.node.expression.*;
@@ -9,29 +12,70 @@ import ast.node.expression.Value.BooleanValue;
 import ast.node.expression.Value.IntValue;
 import ast.node.expression.Value.StringValue;
 import ast.node.statement.*;
+import symbolTable.*;
 
 public class VisitorImpl implements Visitor {
+    
+    public void check_method_by_symtable(ClassDeclaration classDeclaration){
+        //todo for check method
+        classDeclaration.getMethodDeclarations().accept(this);
+    }
+    public void check_inside_classes(Program program){
+        ClassDeclaration main_class=program.getMainClass();
+        List<ClassDeclaration> classes= program.getClasses();
 
+        main_class.accept(this);
+        //symbol table
+        for(int i=0;i<classes;i++){
+            //to do for symbol table 
+            classes.get(i).accept(this);
+        }
+    }
+    
     @Override
-    public void visit(Program program) {
+    public void visit(Node node) {
         //TODO: implement appropriate visit functionality
     }
 
     @Override
+    public void visit(Program program) {
+        //TODO: implement appropriate visit functionality
+        check_inside_classes(program);
+        
+    }
+    //declaration
+    @Override
     public void visit(ClassDeclaration classDeclaration) {
         //TODO: implement appropriate visit functionality
+        SymbolTable sym = new SymbolTable();//for symbol table
+        symtable.push(sym);
+        check_method_by_symtable(classDeclaration);
+        //
+        //for main class, what happen??
+        symtable.pop();
+
     }
 
     @Override
     public void visit(MethodDeclaration methodDeclaration) {
         //TODO: implement appropriate visit functionality
+        methodDeclaration.getReturnType().accept(this);
+        
+    }
+
+    @Override
+    public void visit(MainMethodDeclaration mainMethodDeclaration) {
+        //TODO: implement appropriate visit functionality
+        mainMethodDeclaration.getReturnValue().getType().accept(this);  //not sure
     }
 
     @Override
     public void visit(VarDeclaration varDeclaration) {
         //TODO: implement appropriate visit functionality
+        varDeclaration.getIdentifier().accept(this);
+        varDeclaration.getType().accept(this);
     }
-
+    //Expressions
     @Override
     public void visit(ArrayCall arrayCall) {
         //TODO: implement appropriate visit functionality
@@ -40,6 +84,9 @@ public class VisitorImpl implements Visitor {
     @Override
     public void visit(BinaryExpression binaryExpression) {
         //TODO: implement appropriate visit functionality
+        System.out.println(binaryExpression.toString());
+        binaryExpression.getLeft().accept(this);
+        binaryExpression.getRight().accept(this);
     }
 
     @Override
@@ -85,13 +132,14 @@ public class VisitorImpl implements Visitor {
     @Override
     public void visit(IntValue value) {
         //TODO: implement appropriate visit functionality
+        System.out.println(value.toString());
     }
 
     @Override
     public void visit(StringValue value) {
         //TODO: implement appropriate visit functionality
     }
-
+    //Statements
     @Override
     public void visit(Assign assign) {
         //TODO: implement appropriate visit functionality
