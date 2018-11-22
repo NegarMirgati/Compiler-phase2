@@ -15,8 +15,9 @@ grammar Smoola;
 
     program:
         {Program prog = new Program();
-	 VisitorImpl v = new VisitorImpl();
-        prog.accept(v);} mainClass[prog] (classDeclaration[prog])* EOF 
+	    //VisitorImpl v = new VisitorImpl();
+        //prog.accept(v);
+        } mainClass[prog] (classDeclaration[prog])* EOF 
     ;
 
     mainClass [Program prog] returns [ClassDeclaration main]:
@@ -306,10 +307,11 @@ grammar Smoola;
             
         | 'new ' 'int' '[' num = CONST_NUM ']'
             {   
-                $expr = new NewArray();
                 IntType t = new IntType();
                 IntValue val = new IntValue($num.int, t);
-                $expr = val;
+                NewArray newarr = new NewArray();
+                newarr.setExpression(val);
+                $expr = newarr;
             }
         |   'new ' name = ID '(' ')' {
             Identifier id = new Identifier($name.text);
