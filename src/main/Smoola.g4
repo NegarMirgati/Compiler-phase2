@@ -14,6 +14,10 @@ grammar Smoola;
 }
 @members{
     int num_classes = 0;
+    void print(String str){
+        System.out.println(str);
+    }
+    
 }
 
     program:
