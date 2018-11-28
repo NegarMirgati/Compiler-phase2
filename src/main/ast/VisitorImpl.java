@@ -58,8 +58,8 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(MethodDeclaration methodDeclaration) {
-        //TODO: implement appropriate visit functionality
-        methodDeclaration.getReturnType().accept(this);
+   
+        methodDeclaration.getReturnType().accept(this); // is that all ????
         
     }
 
@@ -83,7 +83,6 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(BinaryExpression binaryExpression) {
-        //TODO: implement appropriate visit functionality
         System.out.println(binaryExpression.toString());
         binaryExpression.getLeft().accept(this);
         binaryExpression.getRight().accept(this);
@@ -121,7 +120,9 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(UnaryExpression unaryExpression) {
-        //TODO: implement appropriate visit functionality
+        
+        unaryExpression.getValue().accept(this); // is that all ? 
+        
     }
 
     @Override
@@ -142,7 +143,9 @@ public class VisitorImpl implements Visitor {
     //Statements
     @Override
     public void visit(Assign assign) {
-        //TODO: implement appropriate visit functionality
+        assign.getlValue().accept(this);
+        assign.getrValue().accept(this); // is that all ? 
+
     }
 
     @Override
@@ -162,6 +165,7 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(Write write) {
-        //TODO: implement appropriate visit functionality
+
+        write.getArg().accept(this); // is that all ? 
     }
 }

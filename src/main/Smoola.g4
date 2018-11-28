@@ -20,7 +20,7 @@ grammar Smoola;
     
 }
 
-    program:
+    program returns [Program prog]:
         {Program prog = new Program();
 	    //VisitorImpl v = new VisitorImpl();
         //prog.accept(v);
