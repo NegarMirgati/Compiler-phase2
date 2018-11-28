@@ -17,6 +17,7 @@ grammar Smoola;
     void print(String str){
         System.out.println(str);
     }
+    
 }
 
     program:
