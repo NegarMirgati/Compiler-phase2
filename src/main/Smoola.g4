@@ -12,16 +12,24 @@ grammar Smoola;
     import ast.Type.PrimitiveType.*;
     import java.util.ArrayList;
 }
+@members{
+    int num_classes = 0;
+}
 
     program:
         {Program prog = new Program();
 	    //VisitorImpl v = new VisitorImpl();
         //prog.accept(v);
-        } mainClass[prog] (classDeclaration[prog])* EOF 
+        } mainClass[prog] (classDeclaration[prog])* EOF
+        {
+        if(num_classes == 0)
+            print("ErrorItemMessage: No class exists in the program"); 
+        }    
     ;
 
     mainClass [Program prog] returns [ClassDeclaration main]:
         'class' className = ID {
+            num_classes+=1;
             Identifier id = new Identifier($className.text);
             $main = new ClassDeclaration(id, null);
         }
@@ -48,6 +56,7 @@ grammar Smoola;
     classDeclaration [Program prog] returns [ClassDeclaration classDec]:
         'class' classname = ID ('extends' parentname = ID)?
         {
+            num_classes+=1;
             Identifier classid = new Identifier($classname.text);
             Identifier parentclassid = new Identifier($parentname.text);
             ClassDeclaration classDecObj = new ClassDeclaration(classid, parentclassid);
