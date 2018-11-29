@@ -1,10 +1,7 @@
 package ast;
-package symbolTable;
 
-import ast.node.Node;
 import ast.node.Program;
 import ast.node.declaration.ClassDeclaration;
-import ast.node.declaration.MainMethodDeclaration;
 import ast.node.declaration.MethodDeclaration;
 import ast.node.declaration.VarDeclaration;
 import ast.node.expression.*;
@@ -12,73 +9,66 @@ import ast.node.expression.Value.BooleanValue;
 import ast.node.expression.Value.IntValue;
 import ast.node.expression.Value.StringValue;
 import ast.node.statement.*;
-import symbolTable.*;
+import java.util.ArrayList;
 
 public class VisitorImpl implements Visitor {
-    
-    public void check_method_by_symtable(ClassDeclaration classDeclaration){
-        //todo for check method
-        classDeclaration.getMethodDeclarations().accept(this);
-    }
-    public void check_inside_classes(Program program){
-        ClassDeclaration main_class=program.getMainClass();
-        List<ClassDeclaration> classes= program.getClasses();
-
-        main_class.accept(this);
-        //symbol table
-        for(int i=0;i<classes;i++){
-            //to do for symbol table 
-            classes.get(i).accept(this);
-        }
-    }
-    
-    @Override
-    public void visit(Node node) {
-        //TODO: implement appropriate visit functionality
-    }
 
     @Override
     public void visit(Program program) {
-        //TODO: implement appropriate visit functionality
-        check_inside_classes(program);
-        
+        program.getMainClass().accept(this);
+        ArrayList <ClassDeclaration> classes = new ArrayList<>(program.getClasses());
+        for(int i = 0; i < classes.size(); i++){
+            classes.get(i).accept(this);
+        }
     }
-    //declaration
+
     @Override
     public void visit(ClassDeclaration classDeclaration) {
-        //TODO: implement appropriate visit functionality
-        SymbolTable sym = new SymbolTable();//for symbol table
-        symtable.push(sym);
-        check_method_by_symtable(classDeclaration);
-        //
-        //for main class, what happen??
-        symtable.pop();
+        System.out.print("Class Declaration");
+        System.out.println(classDeclaration.getName());
+        ArrayList<MethodDeclaration> mthds = new ArrayList<>(classDeclaration.getMethodDeclarations());
+        for (int i = 0; i < mthds.size(); i++){
+            mthds.get(i).accept(this);
+        }
+
+        ArrayList<VarDeclaration> vards = new ArrayList<>(classDeclaration.getVarDeclarations());
+        for (int i = 0; i < vards.size(); i++){
+            vards.get(i).accept(this);
+        }
 
     }
 
     @Override
     public void visit(MethodDeclaration methodDeclaration) {
-   
-        methodDeclaration.getReturnType().accept(this); // is that all ????
+        System.out.print("method : ");
+        System.out.print(methodDeclaration.getName());
+        System.out.println(methodDeclaration.getReturnType().toString()); // is that all ????
+        ArrayList<Statement> body = methodDeclaration.getBody();
+        for(int i = 0; i < body.size(); i++){
+            body.get(i).accept(this);
+        }
+
+        ArrayList<VarDeclaration> vards = new ArrayList<>(methodDeclaration.getLocalVars());
+        for (int i = 0; i < vards.size(); i++){
+             vards.get(i).accept(this);
+        }
         
     }
 
     @Override
-    public void visit(MainMethodDeclaration mainMethodDeclaration) {
-        //TODO: implement appropriate visit functionality
-        mainMethodDeclaration.getReturnValue().getType().accept(this);  //not sure
+    public void visit(VarDeclaration varDeclaration) {
+        System.out.print("vardec : ");
+        System.out.println(varDeclaration.getIdentifier().toString());
+        varDeclaration.getIdentifier().accept(this);
+        System.out.println(varDeclaration.getType().toString());
     }
 
     @Override
-    public void visit(VarDeclaration varDeclaration) {
-        //TODO: implement appropriate visit functionality
-        varDeclaration.getIdentifier().accept(this);
-        varDeclaration.getType().accept(this);
-    }
-    //Expressions
-    @Override
     public void visit(ArrayCall arrayCall) {
-        //TODO: implement appropriate visit functionality
+        System.out.println("here");
+        arrayCall.getIndex().accept(this);
+        System.out.println("there");
+        arrayCall.getInstance().accept(this);
     }
 
     @Override
@@ -90,27 +80,31 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(Identifier identifier) {
-        //TODO: implement appropriate visit functionality
+        System.out.println(identifier.toString());
     }
 
     @Override
     public void visit(Length length) {
-        //TODO: implement appropriate visit functionality
+        length.getExpression().accept(this);
     }
 
     @Override
     public void visit(MethodCall methodCall) {
-        //TODO: implement appropriate visit functionality
+        methodCall.getInstance().accept(this);
+        ArrayList<Expression> args = new ArrayList<> (methodCall.getArgs());
+        for(int i = 0; i < args.size(); i++){
+            args.get(i).accept(this);
+        }
     }
 
     @Override
     public void visit(NewArray newArray) {
-        //TODO: implement appropriate visit functionality
+        newArray.getExpression().accept(this);
     }
 
     @Override
     public void visit(NewClass newClass) {
-        //TODO: implement appropriate visit functionality
+        System.out.println(newClass.toString());
     }
 
     @Override
@@ -120,52 +114,61 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(UnaryExpression unaryExpression) {
-        
-        unaryExpression.getValue().accept(this); // is that all ? 
-        
+        unaryExpression.getValue().accept(this); // is that all ?
     }
 
     @Override
     public void visit(BooleanValue value) {
-        //TODO: implement appropriate visit functionality
-    }
-
-    @Override
-    public void visit(IntValue value) {
-        //TODO: implement appropriate visit functionality
         System.out.println(value.toString());
     }
 
     @Override
-    public void visit(StringValue value) {
-        //TODO: implement appropriate visit functionality
+    public void visit(IntValue value) {
+        System.out.println(value.toString());
+        
     }
-    //Statements
+
+    @Override
+    public void visit(StringValue value) {
+        System.out.println(value.toString());
+    }
+
     @Override
     public void visit(Assign assign) {
         assign.getlValue().accept(this);
         assign.getrValue().accept(this); // is that all ? 
-
     }
 
     @Override
     public void visit(Block block) {
-        //TODO: implement appropriate visit functionality
+        System.out.println("block");
+        // is that all ? is that correct? 
+        ArrayList<Statement> bb = new ArrayList<> (block.getBody());
+        for(int i = 0; i < bb.size(); i++){
+            bb.get(i).accept(this);
+        }
     }
 
     @Override
     public void visit(Conditional conditional) {
-        //TODO: implement appropriate visit functionality
+        System.out.println("conditional");
+        conditional.getExpression().accept(this);
+        conditional.getConsequenceBody().accept(this);
+        conditional.getAlternativeBody().accept(this);
     }
 
     @Override
     public void visit(While loop) {
-        //TODO: implement appropriate visit functionality
+              // is that all?
+              System.out.println("loop");
+              loop.getCondition().accept(this);
+              System.out.println("khakha");
+              loop.getBody().accept(this);
     }
 
     @Override
     public void visit(Write write) {
-
+        System.out.println("write");
         write.getArg().accept(this); // is that all ? 
     }
 }
