@@ -22,9 +22,11 @@ grammar Smoola;
     void print(String str){
         System.out.println(str);
     }
-    void put_VarInSymtable(String name,Type type)throws ItemAlreadyExistsException{
-       // SymbolTable.top.put(new SymbolTableVariableItemBase(name,type,index_variable++));
-    }
+    void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
+			SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
+      print(name + " " + type.toString() );
+		}
+   
     void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
         ArrayList<Type>types = new ArrayList<Type>();
         for(int i=0;i<argTypes.size(); i++){
@@ -116,6 +118,13 @@ grammar Smoola;
         {
             Identifier id = new Identifier($name.text);
             $varDec = new VarDeclaration(id, $t.t);
+            try {
+                print("ID and type are " + $t.text + " " + $name.text);
+                putGlobalVar($name.text, $t.t);
+                }
+                catch(ItemAlreadyExistsException e) {
+                print(String.format("[Line #%s] Variable \"%s\" already exists.", $name.getLine(), $name.text));
+                }
         }
     ;
     methodDeclaration returns[MethodDeclaration methodDec]:
