@@ -15,13 +15,15 @@ grammar Smoola;
 }
 @members{
     int num_classes = 0;
+    int number_of_repeated_method = 0;
+    int number_of_repeated_class = 0;
     int index_variable =0;
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
     void print(String str){
         System.out.println(str);
     }
     void put_VarInSymtable(String name,Type type)throws ItemAlreadyExistsException{
-        SymbolTable.top.put(new SymbolTableVariableItemBase(name,type,index_variable++));
+       // SymbolTable.top.put(new SymbolTableVariableItemBase(name,type,index_variable++));
     }
     void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
         ArrayList<Type>types = new ArrayList<Type>();
@@ -132,7 +134,13 @@ grammar Smoola;
             try{
                 put_method($methodname.text,$methodDec.getArgs());
             }catch(ItemAlreadyExistsException e){
-                
+                print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), $methodname.text));
+                String new_name = $methodname.text + "Temporary_" + Integer.toString(number_of_repeated_method);
+                number_of_repeated_method+=1;
+                try{
+                put_method(new_name,$methodDec.getArgs());
+                }
+                catch(ItemAlreadyExistsException ee){}
             }
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
