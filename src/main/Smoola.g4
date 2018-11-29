@@ -353,29 +353,43 @@ grammar Smoola;
 	expressionMethods returns [Expression expr]: // not sure
 	    instance = expressionOther methodcall = expressionMethodsTemp[$instance.expr] 
         {   
-            if($methodcall.methodcall == null){
+            if($instance.expr == null){
+                print("AAAAAAAAAAAAAAAAA");
+                $expr = $methodcall.expr;
+            }
+            if($methodcall.expr == null){
+                print("here");
                 $expr = $instance.expr;
             }
-            else{
-                $expr = $methodcall.methodcall;
+            else if($methodcall.expr != null){
+                print("theeeeere");
+                $expr = $methodcall.expr;
             }
-
         }
 	;
-	expressionMethodsTemp [Expression instance] returns [MethodCall methodcall]:
-	    '.'  ((methodname = ID '(' ')'{   
-                Identifier id = new Identifier($methodname.text);
-                $methodcall = new MethodCall($instance, id);
-            }) 
-        | methodname = ID '(' {
-                Identifier id = new Identifier($methodname.text);
-                $methodcall = new MethodCall($instance, id);
-            }
-        (arg = expression {$methodcall.addArg($arg.expr);} (',' arg = expression {$methodcall.addArg($arg.expr);})*) ')' 
-        | 'length' {Length len = new Length($instance); }) 
-        expressionMethodsTemp[$instance]
-	    |
-	; // incomplete
+	expressionMethodsTemp [Expression instance] returns [Expression expr]:
+        '.' name = ID '(' ')'  {
+             Identifier id = new Identifier($name.text);
+             MethodCall this_instance = new MethodCall($instance, id);
+             }     temp = expressionMethodsTemp[this_instance] {
+              if($temp.expr != null)
+                $expr = $temp.expr;
+              else
+                $expr = this_instance;
+              }
+         | name = ID {
+             Identifier id = new Identifier($name.text);
+             MethodCall this_instance = new MethodCall($instance, id);}
+          '(' (expr1 = expression {this_instance.addArg($expr1.expr);} 
+          (',' expr2 = expression {this_instance.addArg($expr2.expr);})*) ')' 
+          | 'length'{Expression this_instance = new Length($instance);} temp = expressionMethodsTemp[this_instance] {
+              if($temp.expr != null)
+                $expr = $temp.expr;
+              else
+                $expr = this_instance;
+              }
+	    | 
+	; 
 
     expressionOther returns [Expression expr, Expression lvalue, Expression rvalue]:
 
