@@ -23,8 +23,8 @@ grammar Smoola;
         System.out.println(str);
     }
     void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
-			SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
-      print(name + " " + type.toString() );
+	SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
+        print(name + " " + type.toString() );
 		}
    
     void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
