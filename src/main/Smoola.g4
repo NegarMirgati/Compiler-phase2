@@ -1,4 +1,4 @@
-grammar Smoola;
+grammar Original;
 @header { 
     import ast.*;
     import ast.node.*;
@@ -11,28 +11,12 @@ grammar Smoola;
     import ast.Type.UserDefinedType.*;
     import ast.Type.PrimitiveType.*;
     import java.util.ArrayList;
-    import symbolTable.*;
 }
 @members{
     int num_classes = 0;
-    int number_of_repeated_method = 0;
-    int number_of_repeated_class = 0;
-    int index_variable =0;
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
     void print(String str){
         System.out.println(str);
-    }
-    void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
-	SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
-        print(name + " " + type.toString() );
-		}
-   
-    void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
-        ArrayList<Type>types = new ArrayList<Type>();
-        for(int i=0;i<argTypes.size(); i++){
-            types.add(argTypes.get(i).getType());
-        }
-        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
     }
 
     void setIncompleteTypes(Program prog){
@@ -56,7 +40,6 @@ grammar Smoola;
         }
         return null;
     }
-
     
 }
 
@@ -103,7 +86,6 @@ grammar Smoola;
         'class' classname = ID ('extends' parentname = ID)?
         {
             num_classes+=1;
-	    
             Identifier classid = new Identifier($classname.text);
             Identifier parentclassid = new Identifier($parentname.text);
             $classDec= new ClassDeclaration(classid, parentclassid);
@@ -119,13 +101,6 @@ grammar Smoola;
         {
             Identifier id = new Identifier($name.text);
             $varDec = new VarDeclaration(id, $t.t);
-            try {
-                print("ID and type are " + $t.text + " " + $name.text);
-                putGlobalVar($name.text, $t.t);
-                }
-                catch(ItemAlreadyExistsException e) {
-                print(String.format("[Line #%s] Variable \"%s\" already exists.", $name.getLine(), $name.text));
-                }
         }
     ;
     methodDeclaration returns[MethodDeclaration methodDec]:
@@ -139,24 +114,10 @@ grammar Smoola;
             $methodDec.addArg(arg);}
         (',' id = ID ':' tp = type
         {
-            
-            try{
-                put_method($methodname.text,$methodDec.getArgs());
-            }catch(ItemAlreadyExistsException e){
-                print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), $methodname.text));
-                String new_name = $methodname.text + "Temporary_" + Integer.toString(number_of_repeated_method);
-                number_of_repeated_method+=1;
-                try{
-                put_method(new_name,$methodDec.getArgs());
-                }
-                catch(ItemAlreadyExistsException ee){}
-            }
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
             $methodDec.addArg(arg2);
         })* ')')) ':' 
-        
-          
         rettype = type '{' { $methodDec.setReturnType($rettype.t); }
         (vardec = varDeclaration { $methodDec.addLocalVar($vardec.varDec); })*
         stms = statements {
@@ -210,6 +171,8 @@ grammar Smoola;
 
                 $assign = new Assign($expr.lvalue, $expr.rvalue);
             }
+            else if($expr.expr != null)
+                $assign = new Assign($expr.expr, null);
         }
     ;
 
@@ -392,42 +355,28 @@ grammar Smoola;
 	expressionMethods returns [Expression expr]: // not sure
 	    instance = expressionOther methodcall = expressionMethodsTemp[$instance.expr] 
         {   
-            if($instance.expr == null){
-                print("AAAAAAAAAAAAAAAAA");
-                $expr = $methodcall.expr;
-            }
-            if($methodcall.expr == null){
-                print("here");
+            if($methodcall.methodcall == null){
                 $expr = $instance.expr;
             }
-            else if($methodcall.expr != null){
-                print("theeeeere");
-                $expr = $methodcall.expr;
+            else if($instance.expr == null || $methodcall.methodcall != null){
+                $expr = $methodcall.methodcall;
             }
         }
+    
 	;
-	expressionMethodsTemp [Expression instance] returns [Expression expr]:
-        '.' name = ID '(' ')'  {
-             Identifier id = new Identifier($name.text);
-             MethodCall this_instance = new MethodCall($instance, id);
-             }     temp = expressionMethodsTemp[this_instance] {
-              if($temp.expr != null)
-                $expr = $temp.expr;
-              else
-                $expr = this_instance;
-              }
-         | name = ID {
-             Identifier id = new Identifier($name.text);
-             MethodCall this_instance = new MethodCall($instance, id);}
-          '(' (expr1 = expression {this_instance.addArg($expr1.expr);} 
-          (',' expr2 = expression {this_instance.addArg($expr2.expr);})*) ')' 
-          | 'length'{Expression this_instance = new Length($instance);} temp = expressionMethodsTemp[this_instance] {
-              if($temp.expr != null)
-                $expr = $temp.expr;
-              else
-                $expr = this_instance;
-              }
-	    | 
+	expressionMethodsTemp [Expression instance] returns [Expression methodcall]:
+	    '.'  ((methodname = ID '(' ')'{   
+                Identifier id = new Identifier($methodname.text);
+                $methodcall = new MethodCall($instance, id);
+            }) 
+        | methodname = ID '(' {
+                Identifier id = new Identifier($methodname.text);
+                MethodCall tempm = new MethodCall($instance, id);
+            }
+        (arg = expression {tempm.addArg($arg.expr);} (',' arg = expression {tempm.addArg($arg.expr);})*) {$methodcall = tempm;} ')' 
+        | 'length' {$methodcall = new Length($instance); }) 
+        expressionMethodsTemp[$instance]
+	    |
 	; 
 
     expressionOther returns [Expression expr, Expression lvalue, Expression rvalue]:
