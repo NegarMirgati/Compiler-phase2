@@ -14,8 +14,31 @@ grammar Smoola;
 }
 @members{
     int num_classes = 0;
+    ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
     void print(String str){
         System.out.println(str);
+    }
+
+    void setIncompleteTypes(Program prog){
+
+        for(int i = 0; i < incompleteTypes.size(); i++){
+            UserDefinedType t = incompleteTypes.get(i);
+            Identifier className = t.getName();
+            ArrayList<ClassDeclaration> classes = new ArrayList<>(prog.getClasses());
+            ClassDeclaration cd = findCorrespondingClassDec(prog,className);
+            incompleteTypes.get(i).setClassDeclaration(cd);
+        }
+    }
+
+    ClassDeclaration findCorrespondingClassDec(Program prog, Identifier id){
+        ArrayList<ClassDeclaration> allClasses = new ArrayList<>(prog.getClasses());
+        for(int i = 0; i < allClasses.size(); i++){
+            String s = "Identifier ";
+            if(allClasses.get(i).getName().getName().equals(id.getName())){
+                return (allClasses.get(i));
+            }
+        }
+        return null;
     }
     
 }
@@ -23,6 +46,7 @@ grammar Smoola;
     program returns [Program prog]:
         {Program prog = new Program();} mainClass[prog] (classDeclaration[prog])* EOF
         {
+            setIncompleteTypes(prog);
 	        VisitorImpl v = new VisitorImpl();
             prog.accept(v);
         }
@@ -408,6 +432,7 @@ grammar Smoola;
                  UserDefinedType ct = new UserDefinedType();
                  ct.setName(cid);
                  $t = ct;
+                 incompleteTypes.add(ct);
                  }
 	;
 
