@@ -11,12 +11,25 @@ grammar Smoola;
     import ast.Type.UserDefinedType.*;
     import ast.Type.PrimitiveType.*;
     import java.util.ArrayList;
+    import symbolTable.*;
 }
 @members{
     int num_classes = 0;
+    int index_variable =0;
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
     void print(String str){
         System.out.println(str);
+    }
+    void put_VarInSymtable(String name,Type type)throws ItemAlreadyExistsException{
+        SymbolTable.top.put(new SymbolTableVariableItemBase(name,type,index_variable++));
+    }
+    void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
+        ArrayList<Type>types = new ArrayList<Type>();
+        for(int i=0;i<argTypes.size(); i++){
+            types.add(argTypes.get(i).getType());
+        }
+        //SymbolTable symtable = new SymbolTableMethodItem(name,types);
+        //SymbolTable.top.put(symtable);
     }
 
     void setIncompleteTypes(Program prog){
@@ -40,6 +53,7 @@ grammar Smoola;
         }
         return null;
     }
+
     
 }
 
@@ -114,10 +128,18 @@ grammar Smoola;
             $methodDec.addArg(arg);}
         (',' id = ID ':' tp = type
         {
+            
+            try{
+                put_method($methodname.text,$methodDec.getArgs());
+            }catch(ItemAlreadyExistsException e){
+                
+            }
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
             $methodDec.addArg(arg2);
         })* ')')) ':' 
+        
+          
         rettype = type '{' { $methodDec.setReturnType($rettype.t); }
         (vardec = varDeclaration { $methodDec.addLocalVar($vardec.varDec); })*
         stms = statements {
