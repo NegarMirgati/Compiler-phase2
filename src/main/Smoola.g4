@@ -103,6 +103,7 @@ grammar Smoola;
         'class' classname = ID ('extends' parentname = ID)?
         {
             num_classes+=1;
+	    
             Identifier classid = new Identifier($classname.text);
             Identifier parentclassid = new Identifier($parentname.text);
             $classDec= new ClassDeclaration(classid, parentclassid);
