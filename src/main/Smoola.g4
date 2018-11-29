@@ -30,8 +30,7 @@ grammar Smoola;
         for(int i=0;i<argTypes.size(); i++){
             types.add(argTypes.get(i).getType());
         }
-        //SymbolTable symtable = new SymbolTableMethodItem(name,types);
-        //SymbolTable.top.put(symtable);
+        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
     }
 
     void setIncompleteTypes(Program prog){
