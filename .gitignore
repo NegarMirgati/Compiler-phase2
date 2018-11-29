@@ -93,3 +93,8 @@ fabric.properties
 
 gen/**
 compilerFall97.iml
+
+*.class
+*.interp
+*.tokens
+
