@@ -10,16 +10,37 @@ import ast.node.expression.Value.IntValue;
 import ast.node.expression.Value.StringValue;
 import ast.node.statement.*;
 import java.util.ArrayList;
+import java.lang.*;
+import symbolTable.*;
 
 public class VisitorImpl implements Visitor {
 
+    private int numPassedRounds = 0;
+    private Boolean hasErrors = false;
+    private SymbolTable symTable ;
+
+    public void checkForNameErrors(){
+
+        System.out.println("searching");
+    }
+
     @Override
     public void visit(Program program) {
-        program.getMainClass().accept(this);
-        ArrayList <ClassDeclaration> classes = new ArrayList<>(program.getClasses());
-        for(int i = 0; i < classes.size(); i++){
-            classes.get(i).accept(this);
+        if(numPassedRounds == 0){
+            symTable = new SymbolTable();
+            hasErrors = false;
+            checkForNameErrors();
+
         }
+        if(hasErrors == false){  // first round completed time to start accepting each class
+            numPassedRounds += 1;
+            program.getMainClass().accept(this);
+            ArrayList <ClassDeclaration> classes = new ArrayList<>(program.getClasses());
+            for(int i = 0; i < classes.size(); i++){
+                classes.get(i).accept(this);
+            }
+        }
+        
     }
 
     @Override
@@ -58,7 +79,8 @@ public class VisitorImpl implements Visitor {
     @Override
     public void visit(VarDeclaration varDeclaration) {
         System.out.print("vardec : ");
-        System.out.println(varDeclaration.getIdentifier().toString());
+        System.out.print(varDeclaration.getIdentifier().toString());
+        System.out.println(varDeclaration.getType().toString());
         varDeclaration.getIdentifier().accept(this);
         System.out.println(varDeclaration.getType().toString());
     }
@@ -90,6 +112,8 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(MethodCall methodCall) {
+        System.out.print("methodCall : ");
+        System.out.println(methodCall.getMethodName());
         methodCall.getInstance().accept(this);
         ArrayList<Expression> args = new ArrayList<> (methodCall.getArgs());
         for(int i = 0; i < args.size(); i++){
@@ -104,7 +128,8 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(NewClass newClass) {
-        System.out.println(newClass.toString());
+        System.out.print("new class : ");
+        System.out.println(newClass.getClassName());
     }
 
     @Override
@@ -136,7 +161,8 @@ public class VisitorImpl implements Visitor {
     @Override
     public void visit(Assign assign) {
         assign.getlValue().accept(this);
-        assign.getrValue().accept(this); // is that all ? 
+        if(assign.getrValue() != null)
+            assign.getrValue().accept(this); // is that all ? 
     }
 
     @Override
@@ -152,9 +178,11 @@ public class VisitorImpl implements Visitor {
     @Override
     public void visit(Conditional conditional) {
         System.out.println("conditional");
+        System.out.println(conditional.getExpression().toString());
         conditional.getExpression().accept(this);
         conditional.getConsequenceBody().accept(this);
-        conditional.getAlternativeBody().accept(this);
+        if(conditional.getAlternativeBody() != null )
+            conditional.getAlternativeBody().accept(this);
     }
 
     @Override
@@ -162,7 +190,6 @@ public class VisitorImpl implements Visitor {
               // is that all?
               System.out.println("loop");
               loop.getCondition().accept(this);
-              System.out.println("khakha");
               loop.getBody().accept(this);
     }
 
