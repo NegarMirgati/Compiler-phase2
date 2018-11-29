@@ -1,4 +1,4 @@
-grammar Original;
+grammar Smoola;
 @header { 
     import ast.*;
     import ast.node.*;
@@ -340,7 +340,7 @@ grammar Original;
     expressionMem returns [Expression expr]:
 		instance = expressionMethods index = expressionMemTemp
         {if($index.expr != null){
-            print("oooops"); $expr = new ArrayCall($instance.expr, $index.expr);
+             $expr = new ArrayCall($instance.expr, $index.expr);
             }
         else{
             $expr = $instance.expr;
