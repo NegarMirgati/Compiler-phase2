@@ -62,15 +62,17 @@ grammar Smoola;
     ;
 
     mainClass [Program prog] returns [ClassDeclaration main]:
-        'class' className = ID {
+        cl = 'class' {int line = $cl.getLine();} className = ID {
             num_classes+=1;
             Identifier id = new Identifier($className.text);
             $main = new ClassDeclaration(id, null);
+            $main.setLine(line);
         }
-        '{' 'def' methodname = ID '(' ')' ':' 'int' 
+        '{' ml = 'def' {int mline = $ml.getLine();} methodname = ID '(' ')' ':' 'int' 
         {
             Identifier mid = new Identifier($methodname.text);
             MethodDeclaration mainMethodDec = new MethodDeclaration(mid);
+            mainMethodDec.setLine(mline);
             IntType t = new IntType(); mainMethodDec.setReturnType(t);
 
             }
@@ -88,7 +90,7 @@ grammar Smoola;
          ;
 
     classDeclaration [Program prog] returns [ClassDeclaration classDec]:
-        'class' classname = ID ('extends' parentname = ID)?
+        cl = 'class' {int line = $cl.getLine();} classname = ID ('extends' parentname = ID)?
         {
             num_classes+=1;
             
@@ -100,6 +102,7 @@ grammar Smoola;
                 parentclassid = null;
 
             $classDec= new ClassDeclaration(classid, parentclassid);
+            $classDec.setLine(line);
         }
         '{' (vardec = varDeclaration {$classDec.addVarDeclaration($vardec.varDec);})* 
             (methoddec = methodDeclaration {$classDec.addMethodDeclaration($methoddec.methodDec);})* '}'
@@ -108,43 +111,29 @@ grammar Smoola;
             } 
     ;
     varDeclaration returns [VarDeclaration varDec]:
-        'var' name = ID ':' t = type ';' 
+        vl = 'var' {int line = $vl.getLine(); } name = ID ':' t = type ';' 
         {
             Identifier id = new Identifier($name.text);
             $varDec = new VarDeclaration(id, $t.t);
-            /*  try {
-                print("ID and type are " + $t.text + " " + $name.text);
-                putGlobalVar($name.text, $t.t);
-                }
-                catch(ItemAlreadyExistsException e) {
-                print(String.format("[Line #%s] Variable \"%s\" already exists.", $name.getLine(), $name.text));
-                } */
+            $varDec.setLine(line);
         }
     ;
     methodDeclaration returns[MethodDeclaration methodDec]:
-        'def' methodname = ID{
+        ml = 'def' {int line = $ml.getLine();} methodname = ID{
             Identifier id = new Identifier($methodname.text);
             $methodDec = new MethodDeclaration(id);
+            $methodDec.setLine(line);
         }
-        ('(' ')' | ('(' id = ID ':' tp = type{   
+        ('(' ')' | ( vl = '(' {int vline = $vl.getLine();} id = ID ':' tp = type{   
             Identifier vardecid = new Identifier($id.text);
             VarDeclaration arg = new VarDeclaration(vardecid, $tp.t);
+            arg.setLine(vline);
             $methodDec.addArg(arg);}
-        (',' id = ID ':' tp = type
+        (vl2 = ',' { int vline2 = $vl2.getLine(); } id = ID ':' tp = type
         {
-            /* try{
-                put_method($methodname.text,$methodDec.getArgs());
-            }catch(ItemAlreadyExistsException e){
-                print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), $methodname.text));
-                String new_name = $methodname.text + "Temporary_" + Integer.toString(number_of_repeated_method);
-                number_of_repeated_method+=1;
-                try{
-                put_method(new_name,$methodDec.getArgs());
-                }
-                catch(ItemAlreadyExistsException ee){}
-            }  */
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
+            arg2.setLine(vline2);
             $methodDec.addArg(arg2);
         })* ')')) ':' 
         rettype = type '{' { $methodDec.setReturnType($rettype.t); }
