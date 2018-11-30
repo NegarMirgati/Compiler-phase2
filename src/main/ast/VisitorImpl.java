@@ -15,32 +15,36 @@ import symbolTable.*;
 import ast.Type.*;
 import ast.Type.UserDefinedType.*;
 
+
 public class VisitorImpl implements Visitor {
 
     private int numPassedRounds = 0;
     private Boolean hasErrors = false;
-    private SymbolTable symTable ;
+    private SymbolTable symTable;
     public int number_of_repeated_method=0;
     public int index_variable =0;
     public int index_class =0;
-    public void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
-        SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable));
 
+    public void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
         
-        // System.out.println(name + " " + type.toString() );
+        SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable));
     }
-    public void check_variable_name(VarDeclaration varDeclaration){
-        String name= varDeclaration.getIdentifier().getName();
+
+    public void checkVariableName(VarDeclaration varDeclaration, int ClassFirstLine, int parentLine){
+        String name = varDeclaration.getIdentifier().getName();
         Type type=varDeclaration.getType();
-        index_variable+=1;
+        index_variable += 1;
         try {
-            putGlobalVar(name,type);
-            
+                putGlobalVar(name,type);
 
             }catch(ItemAlreadyExistsException e) {
-            System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", varDeclaration.getLine(), name));
-            
-            String new_name = name + "Temporary_" + Integer.toString(index_variable);
+                hasErrors = true;
+                if(varDeclaration.getLine() > ClassFirstLine){
+                    //System.out.println(String.format("parent line : %d , this line : %d",parentLine, varDeclaration.getLine()));
+                    int lineToShow = Math.max(varDeclaration.getLine(), parentLine);
+                    System.out.println(String.format("Line:%d:Redefinition of Variable %s", lineToShow, name));
+                }
+                String new_name = name + "Temporary_" + Integer.toString(index_variable);
             
             try{
                 putGlobalVar(name,type);
@@ -49,24 +53,26 @@ public class VisitorImpl implements Visitor {
             }
     }
     public void put_class(String name,Type type)throws ItemAlreadyExistsException{
+
         SymbolTable.top.put( new SymbolTableClassItem(name,type,index_class));
     }
-    public void check_class_name(ClassDeclaration classDeclaration){
+
+    public void checkClassNames(ClassDeclaration classDeclaration){
         String name= classDeclaration.getName().getName();
         UserDefinedType class_type= new UserDefinedType();
         class_type.setClassDeclaration(classDeclaration);
-        Type type= class_type;
         index_class+=1;
+
         try{
-            put_class(name,type);
+            put_class(name, class_type);
         }catch(ItemAlreadyExistsException e){
 
-            System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", classDeclaration.getLine(), name));
-            
+            System.out.println(String.format("Line:%d:Redefinition of class %s", classDeclaration.getLine(), name));
+            hasErrors = true;
             String new_name = name + "Temporary_" + Integer.toString(index_class);
             
             try{
-                put_class(name,type);
+                put_class(name,class_type);
             
             }
             catch(ItemAlreadyExistsException ee){}
@@ -80,15 +86,17 @@ public class VisitorImpl implements Visitor {
         }
         SymbolTable.top.put(new SymbolTableMethodItem(name,types));
     }
-    public void check_method_name(MethodDeclaration methodDeclaration){
+    public void checkMethodName(MethodDeclaration methodDeclaration, int classFirstLine, int parentLine){
         String methodname = methodDeclaration.getName().getName();
         ArrayList<VarDeclaration> argTypes = new ArrayList<>(methodDeclaration.getArgs());
         argTypes= methodDeclaration.getArgs();
         try{
             put_method(methodname,argTypes);
         }catch(ItemAlreadyExistsException e){
-            print(String.format("[Line #%s] Variable \"%s\" already exists.", methodDeclaration.getLine(), methodname));
-            
+            if(methodDeclaration.getLine() > classFirstLine){
+                int lineToShow = Math.max(methodDeclaration.getLine(), parentLine);
+                System.out.println(String.format("Line:%d:Redefinition of method %s", lineToShow, methodname));
+            }
             String new_name = methodname + "Temporary_" + Integer.toString(number_of_repeated_method);
             number_of_repeated_method+=1;
             try{
@@ -98,50 +106,130 @@ public class VisitorImpl implements Visitor {
         }  
     }
 
+    public int getLineOfParentMethod(String methodname, String parentName, Program program){
 
-    public void checkForRepeatedNameErrors(Program p){
+        ClassDeclaration pc = findParentClass(parentName, program);
+        ArrayList<MethodDeclaration> methods = pc.getMethodDeclarations();
+        for(int i = 0 ; i < methods.size(); i++){
+            //System.out.println(String.format("this name %s , parent name %s", methodname, methods.get(i).getName().getName()));
+            if(methods.get(i).getName().getName().equals(methodname))
+                return methods.get(i).getLine();
+        }
+        return -1;
+    }
 
-        ArrayList<ClassDeclaration> classDecs = new ArrayList<>(p.getClasses());
-       /* for(int i = 0 ; i < classDecs.size(); i++){
-            try{
-                
-                symbolTable.top.put();
+    public int getLineOfParentVar(String varName, String parentName, Program program){
+
+        ClassDeclaration pc = findParentClass(parentName, program);
+        ArrayList<VarDeclaration> vars = pc.getVarDeclarations();
+        for(int i = 0 ; i < vars.size(); i++){
+            if(vars.get(i).getIdentifier().getName().equals(varName))
+                return vars.get(i).getLine();
+        }
+        return -1;
+    }
+
+    public void checkAllClassesForRepeatedNameErrors(Program program){
+
+        ArrayList<ClassDeclaration> classDecs = new ArrayList<> ();
+        classDecs.add(program.getMainClass());
+        classDecs.addAll(program.getClasses());
+        symTable.top = (new SymbolTable());
+        for(int i = 0 ; i < classDecs.size(); i++){
+            checkClassNames(classDecs.get(i));
+        }
+        symTable.top.pop();
+    }
+
+    public void checkInsideClass(ClassDeclaration cd, Program program){
+        checkVariableNamesInsideClass(cd, program);
+        checkMethodNamesInsideClass(cd, program);
+    }
+
+    public void checkVariableNamesInsideClass(ClassDeclaration cd, Program program){
+        symTable.top = (new SymbolTable());
+        int classDecLine = cd.getLine();
+        
+        ArrayList<VarDeclaration> variableDecs = new ArrayList<> ();
+
+        if(cd.getParentName() != null){
+            String parentName = cd.getParentName().getName();
+            ClassDeclaration pc = findParentClass(parentName, program);
+            variableDecs.addAll(pc.getVarDeclarations());
+        }
+       
+        variableDecs.addAll(cd.getVarDeclarations());
+
+        for(int i = 0; i < variableDecs.size(); i++){
+            String varName = variableDecs.get(i).getIdentifier().getName();
+            int parentLine = -1;
+            if(cd.getParentName() != null)
+                parentLine = getLineOfParentVar(varName, cd.getParentName().getName(), program);
+
+            checkVariableName(variableDecs.get(i), classDecLine, parentLine);
+
+        }
+        symTable.top.pop();
+    }
+    public void checkMethodNamesInsideClass(ClassDeclaration cd, Program program){
+
+        symTable.top = (new SymbolTable());
+        int classDecLine = cd.getLine();
+        
+        ArrayList<MethodDeclaration> methodDecs = new ArrayList<> ();
+
+        if(cd.getParentName() != null){
+            String parentName = cd.getParentName().getName();
+            ClassDeclaration pc = findParentClass(parentName, program);
+            methodDecs.addAll(pc.getMethodDeclarations());
+        }
+       
+        methodDecs.addAll(cd.getMethodDeclarations());
+
+        for(int i = 0; i < methodDecs.size(); i++){
+            String varName = methodDecs.get(i).getName().getName();
+            int parentLine = -1;
+            if(cd.getParentName() != null){
+                parentLine = getLineOfParentMethod(varName, cd.getParentName().getName(), program);
             }
-            catch(ItemAlreadyExistsException e){
-                String s = "Redefinition of class " ;
-                s.concat(className);
-                String line = "Line:";
-                int classLine = classDecs.get(i).getLine();
-                line.concat(Integer.toString(classLine));
-                System.out.println(line.concat(s));
 
-                hasErrors = True ;
+            checkMethodName(methodDecs.get(i), classDecLine, parentLine);
 
-                try{
+        }
+        symTable.top.pop();
 
-                }
-                catch(ItemAlreadyExistsException ee){
-                    // nothing to do, never going to happen
-                }
+    }
+
+    public ClassDeclaration findParentClass(String parentName, Program p){
+        ArrayList <ClassDeclaration> classDecs = getAllClassDeclarations(p);
+        for(int i = 0; i  < classDecs.size(); i++){
+            if(classDecs.get(i).getName().getName().equals(parentName)){
+                return classDecs.get(i);
             }
-            
-        } */
+        }   
+        return null;
+    }
+
+    public ArrayList<ClassDeclaration> getAllClassDeclarations(Program p){
+
+        ArrayList<ClassDeclaration> classDecs = new ArrayList<> ();
+        classDecs.add(p.getMainClass());
+        classDecs.addAll(p.getClasses());
+        return classDecs;
     }
 
     @Override
     public void visit(Program program) {
-        if(numPassedRounds == 0){
-            symTable = new SymbolTable();
+        if(numPassedRounds == 0){ // pass 1
+            this.symTable = new SymbolTable();
             hasErrors = false;
-            //checkForRepeatedNameErrors(program);
-
-        }
-        if(hasErrors == false){  // first round completed time to start accepting each class
+            checkAllClassesForRepeatedNameErrors(program);
             numPassedRounds += 1;
-            program.getMainClass().accept(this);
-            ArrayList <ClassDeclaration> classes = new ArrayList<>(program.getClasses());
-            for(int i = 0; i < classes.size(); i++){
-                classes.get(i).accept(this);
+        }
+        if(numPassedRounds == 1){  // pass 2
+            ArrayList<ClassDeclaration> classDecs = getAllClassDeclarations(program);
+            for(int i = 0; i < classDecs.size(); i++){
+                checkInsideClass(classDecs.get(i), program);
             }
         }
     }
@@ -156,11 +244,9 @@ public class VisitorImpl implements Visitor {
             classDeclaration.getParentName().accept(this);
             
         ArrayList<VarDeclaration> vards = new ArrayList<>(classDeclaration.getVarDeclarations());
-        check_class_name(classDeclaration);
         for (int i = 0; i < vards.size(); i++){
             vards.get(i).accept(this);
         }
- 
         ArrayList<MethodDeclaration> mthds = new ArrayList<>(classDeclaration.getMethodDeclarations());
         for (int i = 0; i < mthds.size(); i++){
             mthds.get(i).accept(this);
@@ -173,12 +259,6 @@ public class VisitorImpl implements Visitor {
         System.out.println(methodDeclaration.toString());
    
         methodDeclaration.getName().accept(this); 
-
-        
-        check_method_name(methodDeclaration);
-        for(int i = 0; i < args.size(); i++){
-            args.get(i).accept(this);
-        }
 
         System.out.println(methodDeclaration.getReturnType().toString());
 
@@ -200,7 +280,6 @@ public class VisitorImpl implements Visitor {
     public void visit(VarDeclaration varDeclaration) {
         
         System.out.println(varDeclaration.toString());
-        check_variable_name(varDeclaration);
         varDeclaration.getIdentifier().accept(this);
         System.out.println(varDeclaration.getType().toString());
     }
