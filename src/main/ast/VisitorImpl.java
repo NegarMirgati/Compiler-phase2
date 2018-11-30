@@ -289,7 +289,7 @@ public class VisitorImpl implements Visitor {
     public void visit(Assign assign) {
 
         if(assign.getrValue() == null){
-            //System.out.println(assign.toString());  // not sure
+            System.out.println(assign.toString());  // not sure
             assign.getlValue().accept(this);
         }
 
