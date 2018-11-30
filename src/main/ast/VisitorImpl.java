@@ -29,15 +29,17 @@ public class VisitorImpl implements Visitor {
         
         // System.out.println(name + " " + type.toString() );
     }
-    public void check_variable_name(String name,Type type){
+    public void check_variable_name(VarDeclaration varDeclaration){
+        String name= varDeclaration.getIdentifier().getName();
+        Type type=varDeclaration.getType();
         index_variable+=1;
         try {
             putGlobalVar(name,type);
             
 
             }catch(ItemAlreadyExistsException e) {
-            //System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
-            System.out.println(String.format("Variable \"%s\" already exists.", name));
+            System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", varDeclaration.getLine(), name));
+            
             String new_name = name + "Temporary_" + Integer.toString(index_variable);
             
             try{
@@ -49,14 +51,18 @@ public class VisitorImpl implements Visitor {
     public void put_class(String name,Type type)throws ItemAlreadyExistsException{
         SymbolTable.top.put( new SymbolTableClassItem(name,type,index_class));
     }
-    public void check_class_name(String name,Type type){
+    public void check_class_name(ClassDeclaration classDeclaration){
+        String name= classDeclaration.getName().getName();
+        UserDefinedType class_type= new UserDefinedType();
+        class_type.setClassDeclaration(classDeclaration);
+        Type type= class_type;
         index_class+=1;
         try{
             put_class(name,type);
         }catch(ItemAlreadyExistsException e){
 
-            //System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
-            System.out.println(String.format("Variable \"%s\" already exists.", name));
+            System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", classDeclaration.getLine(), name));
+            
             String new_name = name + "Temporary_" + Integer.toString(index_class);
             
             try{
@@ -74,12 +80,15 @@ public class VisitorImpl implements Visitor {
         }
         SymbolTable.top.put(new SymbolTableMethodItem(name,types));
     }
-    public void check_method_name(String methodname, ArrayList<VarDeclaration> argTypes){
+    public void check_method_name(MethodDeclaration methodDeclaration){
+        String methodname = methodDeclaration.getName().getName();
+        ArrayList<VarDeclaration> argTypes = new ArrayList<>(methodDeclaration.getArgs());
+        argTypes= methodDeclaration.getArgs();
         try{
             put_method(methodname,argTypes);
         }catch(ItemAlreadyExistsException e){
-            //print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), methodname));
-            System.out.println(String.format(" Variable \"%s\" already exists.", methodname));
+            print(String.format("[Line #%s] Variable \"%s\" already exists.", methodDeclaration.getLine(), methodname));
+            
             String new_name = methodname + "Temporary_" + Integer.toString(number_of_repeated_method);
             number_of_repeated_method+=1;
             try{
@@ -145,10 +154,9 @@ public class VisitorImpl implements Visitor {
         classDeclaration.getName().accept(this);
         if(classDeclaration.getParentName() != null)
             classDeclaration.getParentName().accept(this);
-            UserDefinedType class_type= new UserDefinedType();
-           class_type.setClassDeclaration(classDeclaration);
+            
         ArrayList<VarDeclaration> vards = new ArrayList<>(classDeclaration.getVarDeclarations());
-        check_class_name(classDeclaration.getName().getName(),class_type);
+        check_class_name(classDeclaration);
         for (int i = 0; i < vards.size(); i++){
             vards.get(i).accept(this);
         }
@@ -166,9 +174,8 @@ public class VisitorImpl implements Visitor {
    
         methodDeclaration.getName().accept(this); 
 
-        ArrayList<VarDeclaration> args = new ArrayList<>(methodDeclaration.getArgs());
-        args= methodDeclaration.getArgs();
-        check_method_name(methodDeclaration.getName().getName(),args);
+        
+        check_method_name(methodDeclaration);
         for(int i = 0; i < args.size(); i++){
             args.get(i).accept(this);
         }
@@ -193,7 +200,7 @@ public class VisitorImpl implements Visitor {
     public void visit(VarDeclaration varDeclaration) {
         
         System.out.println(varDeclaration.toString());
-        check_variable_name(varDeclaration.getIdentifier().getName(),varDeclaration.getType());
+        check_variable_name(varDeclaration);
         varDeclaration.getIdentifier().accept(this);
         System.out.println(varDeclaration.getType().toString());
     }
