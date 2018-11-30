@@ -20,7 +20,7 @@ class Test {
 }
 
 class Test2 {
-	def main2(x: int, y:string, z: Rectangle) : int {
+	def main2(x: int, y:string, z: Test) : int {
 		if (x==3) then 
 			while (y<>4) {
 				if (x+1==0) then {

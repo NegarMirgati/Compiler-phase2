@@ -19,9 +19,33 @@ public class VisitorImpl implements Visitor {
     private Boolean hasErrors = false;
     private SymbolTable symTable ;
 
-    public void checkForRepeatedNameErrors(){
+    public void checkForRepeatedNameErrors(Program p){
 
-        System.out.println("searching");
+        ArrayList<ClassDeclaration> classDecs = new ArrayList<>(p.getClasses());
+       /* for(int i = 0 ; i < classDecs.size(); i++){
+            try{
+                
+                symbolTable.top.put();
+            }
+            catch(ItemAlreadyExistsException e){
+                String s = "Redefinition of class " ;
+                s.concat(className);
+                String line = "Line:";
+                int classLine = classDecs.get(i).getLine();
+                line.concat(Integer.toString(classLine));
+                System.out.println(line.concat(s));
+
+                hasErrors = True ;
+
+                try{
+
+                }
+                catch(ItemAlreadyExistsException ee){
+                    // nothing to do, never going to happen
+                }
+            }
+            
+        } */
     }
 
     @Override
@@ -29,7 +53,7 @@ public class VisitorImpl implements Visitor {
         if(numPassedRounds == 0){
             symTable = new SymbolTable();
             hasErrors = false;
-            checkForRepeatedNameErrors();
+            //checkForRepeatedNameErrors(program);
 
         }
         if(hasErrors == false){  // first round completed time to start accepting each class
@@ -40,60 +64,80 @@ public class VisitorImpl implements Visitor {
                 classes.get(i).accept(this);
             }
         }
-        
     }
 
     @Override
     public void visit(ClassDeclaration classDeclaration) {
-        System.out.print("Class Declaration");
-        System.out.println(classDeclaration.getName());
-        ArrayList<MethodDeclaration> mthds = new ArrayList<>(classDeclaration.getMethodDeclarations());
-        for (int i = 0; i < mthds.size(); i++){
-            mthds.get(i).accept(this);
-        }
+
+        System.out.println(classDeclaration.toString());
+
+        classDeclaration.getName().accept(this);
+        if(classDeclaration.getParentName() != null)
+            classDeclaration.getParentName().accept(this);
 
         ArrayList<VarDeclaration> vards = new ArrayList<>(classDeclaration.getVarDeclarations());
         for (int i = 0; i < vards.size(); i++){
             vards.get(i).accept(this);
         }
-
+ 
+        ArrayList<MethodDeclaration> mthds = new ArrayList<>(classDeclaration.getMethodDeclarations());
+        for (int i = 0; i < mthds.size(); i++){
+            mthds.get(i).accept(this);
+        }
     }
 
     @Override
     public void visit(MethodDeclaration methodDeclaration) {
-        System.out.print("method : ");
-        System.out.print(methodDeclaration.getName());
-        System.out.println(methodDeclaration.getReturnType().toString()); // is that all ????
-        ArrayList<Statement> body = methodDeclaration.getBody();
-        for(int i = 0; i < body.size(); i++){
-            body.get(i).accept(this);
+
+        System.out.println(methodDeclaration.toString());
+   
+        methodDeclaration.getName().accept(this); 
+
+        ArrayList<VarDeclaration> args = new ArrayList<>(methodDeclaration.getArgs());
+        for(int i = 0; i < args.size(); i++){
+            args.get(i).accept(this);
         }
 
-        ArrayList<VarDeclaration> vards = new ArrayList<>(methodDeclaration.getLocalVars());
-        for (int i = 0; i < vards.size(); i++){
-             vards.get(i).accept(this);
+        System.out.println(methodDeclaration.getReturnType().toString());
+
+        // accept local variables
+        ArrayList <VarDeclaration> localVars = new ArrayList<>(methodDeclaration.getLocalVars());
+        for(int i = 0; i < localVars.size(); i++){
+            localVars.get(i).accept(this);
         }
-        
+        // then accept body statements 
+        ArrayList<Statement> bodyStms = new ArrayList<>(methodDeclaration.getBody());
+        for (int i = 0; i < bodyStms.size(); i++){
+            bodyStms.get(i).accept(this);
+        }
+        // finally accept return statement
+        methodDeclaration.getReturnValue().accept(this);
     }
 
     @Override
     public void visit(VarDeclaration varDeclaration) {
-        varDeclaration.getIdentifier().accept(this);
+        
         System.out.println(varDeclaration.toString());
+        
+        varDeclaration.getIdentifier().accept(this);
+        System.out.println(varDeclaration.getType().toString());
     }
 
     @Override
     public void visit(ArrayCall arrayCall) {
-        arrayCall.getIndex().accept(this);
+
+        System.out.println(arrayCall.toString());
+
         arrayCall.getInstance().accept(this);
-        System.out.println(arraycall.toString());
+        arrayCall.getIndex().accept(this);
     }
 
     @Override
     public void visit(BinaryExpression binaryExpression) {
+
+        System.out.println(binaryExpression.toString());
         binaryExpression.getLeft().accept(this);
         binaryExpression.getRight().accept(this);
-        System.out.println(binaryExpression.toString());
     }
 
     @Override
@@ -103,32 +147,38 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(Length length) {
-        length.getExpression().accept(this);
         System.out.println(length.toString());
+        length.getExpression().accept(this);
     }
 
     @Override
     public void visit(MethodCall methodCall) {
+
+        System.out.println(methodCall.toString());
         methodCall.getInstance().accept(this);
+        methodCall.getMethodName().accept(this);
         ArrayList<Expression> args = new ArrayList<> (methodCall.getArgs());
         for(int i = 0; i < args.size(); i++){
             args.get(i).accept(this);
         }
-        System.out.println(methodCall.toString());
+
     }
 
     @Override
     public void visit(NewArray newArray) {
         newArray.getExpression().accept(this); // do we need this?
-        if(newArray.getExpression() == 0) // is that all?
-            System.out.println("ErrorItemMessage: Array length should not be zero or negative");
-        else
+        //if(newArray.getExpression().getConstant() == 0) // is that all?
+          //  System.out.println("ErrorItemMessage: Array length should not be zero or negative");
+        //else
             System.out.println(newArray.toString());
+            newArray.getExpression().accept(this);
     }
 
     @Override
     public void visit(NewClass newClass) {
+
         System.out.println(newClass.toString());
+        System.out.println(newClass.getClassName());
     }
 
     @Override
@@ -138,68 +188,80 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(UnaryExpression unaryExpression) {
-        unaryExpression.getValue().accept(this); // is that all ?
+
         System.out.println(unaryExpression.toString());
+        unaryExpression.getValue().accept(this);
+        
     }
 
     @Override
     public void visit(BooleanValue value) {
-        if(hasErrors = false)
+        //if(hasErrors = false)
             System.out.println(value.toString());
     }
 
     @Override
     public void visit(IntValue value) {
-        if(hasErrors = false)
+        //if(hasErrors = false)
             System.out.println(value.toString());
-        
     }
 
     @Override
     public void visit(StringValue value) {
-        if(hasErrors == false)
+        //if(hasErrors == false)
             System.out.println(value.toString());
     }
 
     @Override
     public void visit(Assign assign) {
-        assign.getlValue().accept(this);
-        if(assign.getrValue() != null)
-            assign.getrValue().accept(this); // is that all ?
 
-        System.out.println(assign.toString());
+        if(assign.getrValue() == null){
+            //System.out.println(assign.toString());  // not sure
+            assign.getlValue().accept(this);
+        }
+
+        if(assign.getrValue() != null){
+                System.out.println(assign.toString());
+                assign.getlValue().accept(this);
+                assign.getrValue().accept(this); 
+            }
     }
 
     @Override
     public void visit(Block block) {
+        System.out.println(block.toString());
+
         ArrayList<Statement> bb = new ArrayList<> (block.getBody());
         for(int i = 0; i < bb.size(); i++){
             bb.get(i).accept(this);
         }
-        System.out.println(block.toString());
+        
     }
 
     @Override
     public void visit(Conditional conditional) {
-        conditional.getExpression().accept(this);
-        conditional.getConsequenceBody().accept(this);
-        if(conditional.getAlternativeBody() != null )
-            conditional.getAlternativeBody().accept(this);
 
         System.out.println(conditional.toString());
+
+        conditional.getExpression().accept(this);
+        conditional.getConsequenceBody().accept(this);
+
+        if(conditional.getAlternativeBody() != null )
+            conditional.getAlternativeBody().accept(this);
     }
 
     @Override
     public void visit(While loop) {
-              // is that all?
+              System.out.println(loop.toString());
+
               loop.getCondition().accept(this);
               loop.getBody().accept(this);
-              System.out.println(loop.toString());
     }
 
     @Override
     public void visit(Write write) {
-        write.getArg().accept(this); // is that all ? 
         System.out.println(write.toString());
+
+        write.getArg().accept(this); 
     }
 }

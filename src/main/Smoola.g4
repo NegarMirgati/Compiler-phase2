@@ -37,7 +37,7 @@ grammar Smoola;
     void print(String str){
         System.out.println(str);
     }
-   
+
     void setIncompleteTypes(Program prog){
 
         for(int i = 0; i < incompleteTypes.size(); i++){
@@ -51,6 +51,7 @@ grammar Smoola;
 
     ClassDeclaration findCorrespondingClassDec(Program prog, Identifier id){
         ArrayList<ClassDeclaration> allClasses = new ArrayList<>(prog.getClasses());
+        allClasses.add(prog.getMainClass());
         for(int i = 0; i < allClasses.size(); i++){
             String s = "Identifier ";
             if(allClasses.get(i).getName().getName().equals(id.getName())){
@@ -105,8 +106,14 @@ grammar Smoola;
         'class' classname = ID ('extends' parentname = ID)?
         {
             num_classes+=1;
+            
             Identifier classid = new Identifier($classname.text);
-            Identifier parentclassid = new Identifier($parentname.text);
+            Identifier parentclassid;
+            if($parentname.text != null)
+                parentclassid = new Identifier($parentname.text);
+            else    
+                parentclassid = null;
+
             $classDec= new ClassDeclaration(classid, parentclassid);
         }
         '{' (vardec = varDeclaration {$classDec.addVarDeclaration($vardec.varDec);})* 
@@ -120,13 +127,13 @@ grammar Smoola;
         {
             Identifier id = new Identifier($name.text);
             $varDec = new VarDeclaration(id, $t.t);
-            try {
+            /*  try {
                 print("ID and type are " + $t.text + " " + $name.text);
                 putGlobalVar($name.text, $t.t);
                 }
                 catch(ItemAlreadyExistsException e) {
                 print(String.format("[Line #%s] Variable \"%s\" already exists.", $name.getLine(), $name.text));
-                }
+                } */
         }
     ;
     methodDeclaration returns[MethodDeclaration methodDec]:
@@ -140,7 +147,7 @@ grammar Smoola;
             $methodDec.addArg(arg);}
         (',' id = ID ':' tp = type
         {
-            try{
+            /* try{
                 put_method($methodname.text,$methodDec.getArgs());
             }catch(ItemAlreadyExistsException e){
                 print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), $methodname.text));
@@ -150,7 +157,7 @@ grammar Smoola;
                 put_method(new_name,$methodDec.getArgs());
                 }
                 catch(ItemAlreadyExistsException ee){}
-            }  
+            }  */
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
             $methodDec.addArg(arg2);
