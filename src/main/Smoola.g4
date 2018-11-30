@@ -11,9 +11,24 @@ grammar Smoola;
     import ast.Type.UserDefinedType.*;
     import ast.Type.PrimitiveType.*;
     import java.util.ArrayList;
+    import symbolTable.*;
 }
 @members{
     int num_classes = 0;
+
+    void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
+	SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
+        print(name + " " + type.toString() );
+		}
+   
+    void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
+        ArrayList<Type>types = new ArrayList<Type>();
+        for(int i=0;i<argTypes.size(); i++){
+            types.add(argTypes.get(i).getType());
+        }
+        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
+    }
+    
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
     void print(String str){
         System.out.println(str);

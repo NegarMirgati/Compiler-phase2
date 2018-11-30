@@ -98,8 +98,12 @@ compilerFall97.iml
 *.interp
 *.tokens
 **.class
- .DS_Store
- src/.DS_Store
- src/.vscode/
- src/main/.DS_Store
- src/main/.antlr/
+.DS_Store
+src/.DS_Store
+src/.vscode/
+src/main/.DS_Store
+src/main/.antlr
+src/main/outputs
+src/main/Test.g4
+src/main/Original.g4
+src/main/testCases/*.sml
