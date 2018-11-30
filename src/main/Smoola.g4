@@ -14,9 +14,9 @@ grammar Smoola;
     import symbolTable.*;
 }
 @members{
-    int num_classes = 0;
+    boolean noClasses = true;
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
-        
+
     void print(String str){
         System.out.println(str);
     }
@@ -46,21 +46,21 @@ grammar Smoola;
 }
 
     program returns [Program prog]:
-        {Program prog = new Program();} mainClass[prog] (classDeclaration[prog])* EOF
+        {Program prog = new Program();} mainClass[prog](classDeclaration[prog])* EOF 
         {
-            setIncompleteTypes(prog);
-	        VisitorImpl v = new VisitorImpl();
-            prog.accept(v);
-        }
-        {
-        if(num_classes == 0)
-            print("ErrorItemMessage: No class exists in the program"); 
+            if(noClasses == true)
+                print("Line:0:No class exists in the program"); 
+            else{
+                setIncompleteTypes(prog);
+	            VisitorImpl v = new VisitorImpl();
+                prog.accept(v);
+            }
+
         }    
     ;
 
     mainClass [Program prog] returns [ClassDeclaration main]:
-        cl = 'class' {int line = $cl.getLine();} className = ID {
-            num_classes+=1;
+        cl = 'class'{noClasses = false;}{int line = $cl.getLine();} className = ID {
             Identifier id = new Identifier($className.text);
             $main = new ClassDeclaration(id, null);
             $main.setLine(line);
@@ -87,10 +87,8 @@ grammar Smoola;
          ;
 
     classDeclaration [Program prog] returns [ClassDeclaration classDec]:
-        cl = 'class' {int line = $cl.getLine();} classname = ID ('extends' parentname = ID)?
+        {noClasses = false;}cl = 'class' {int line = $cl.getLine();} classname = ID ('extends' parentname = ID)?
         {
-            num_classes+=1;
-            
             Identifier classid = new Identifier($classname.text);
             Identifier parentclassid;
             if($parentname.text != null)
