@@ -15,7 +15,6 @@ import symbolTable.*;
 import ast.Type.*;
 import ast.Type.UserDefinedType.*;
 
-
 public class VisitorImpl implements Visitor {
 
     private int numPassedRounds = 0;
@@ -73,7 +72,6 @@ public class VisitorImpl implements Visitor {
             
             try{
                 put_class(name,class_type);
-            
             }
             catch(ItemAlreadyExistsException ee){}
         }
@@ -94,6 +92,7 @@ public class VisitorImpl implements Visitor {
             put_method(methodname,argTypes);
         }catch(ItemAlreadyExistsException e){
             if(methodDeclaration.getLine() > classFirstLine){
+                hasErrors = true;
                 int lineToShow = Math.max(methodDeclaration.getLine(), parentLine);
                 System.out.println(String.format("Line:%d:Redefinition of method %s", lineToShow, methodname));
             }
@@ -144,6 +143,7 @@ public class VisitorImpl implements Visitor {
     public void checkInsideClass(ClassDeclaration cd, Program program){
         checkVariableNamesInsideClass(cd, program);
         checkMethodNamesInsideClass(cd, program);
+        checkInsideMethods(cd, program);
     }
 
     public void checkVariableNamesInsideClass(ClassDeclaration cd, Program program){
@@ -199,6 +199,23 @@ public class VisitorImpl implements Visitor {
         symTable.top.pop();
 
     }
+    public void checkVariablesOfMethod(ArrayList<VarDeclaration> variableDecs, Program program){
+        symTable.top = (new SymbolTable());
+
+        for(int i = 0; i < variableDecs.size(); i++){
+            String varName = variableDecs.get(i).getIdentifier().getName();
+            checkVariableName(variableDecs.get(i), -1, -1);
+        }
+        symTable.top.pop();
+    }
+   
+    public void checkInsideMethods(ClassDeclaration md, Program p){
+        ArrayList<MethodDeclaration> methodDecs = md.getMethodDeclarations();
+        for(int i = 0; i < methodDecs.size(); i++){
+            checkVariablesOfMethod(methodDecs.get(i).getArgs(), p);
+            checkVariablesOfMethod(methodDecs.get(i).getLocalVars(), p);
+        }
+    }
 
     public ClassDeclaration findParentClass(String parentName, Program p){
         ArrayList <ClassDeclaration> classDecs = getAllClassDeclarations(p);
@@ -231,13 +248,21 @@ public class VisitorImpl implements Visitor {
             for(int i = 0; i < classDecs.size(); i++){
                 checkInsideClass(classDecs.get(i), program);
             }
+            numPassedRounds += 1;
+        }
+        if(numPassedRounds == 2){ // final round : print ast if no errors found
+            ArrayList<ClassDeclaration> allClasses =  getAllClassDeclarations(program);
+            for(int i = 0; i < allClasses.size(); i++){
+                allClasses.get(i).accept(this);
+            }
         }
     }
 
     @Override
     public void visit(ClassDeclaration classDeclaration) {
-
-        System.out.println(classDeclaration.toString());
+        
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(classDeclaration.toString());
 
         classDeclaration.getName().accept(this);
         if(classDeclaration.getParentName() != null)
@@ -255,12 +280,13 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(MethodDeclaration methodDeclaration) {
-
-        System.out.println(methodDeclaration.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(methodDeclaration.toString());
    
         methodDeclaration.getName().accept(this); 
 
-        System.out.println(methodDeclaration.getReturnType().toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(methodDeclaration.getReturnType().toString());
 
         // accept local variables
         ArrayList <VarDeclaration> localVars = new ArrayList<>(methodDeclaration.getLocalVars());
@@ -278,16 +304,18 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(VarDeclaration varDeclaration) {
-        
-        System.out.println(varDeclaration.toString());
+
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(varDeclaration.toString());
         varDeclaration.getIdentifier().accept(this);
-        System.out.println(varDeclaration.getType().toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(varDeclaration.getType().toString());
     }
 
     @Override
     public void visit(ArrayCall arrayCall) {
-
-        System.out.println(arrayCall.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(arrayCall.toString());
 
         arrayCall.getInstance().accept(this);
         arrayCall.getIndex().accept(this);
@@ -295,26 +323,30 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(BinaryExpression binaryExpression) {
-        System.out.println(binaryExpression.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(binaryExpression.toString());
         binaryExpression.getLeft().accept(this);
         binaryExpression.getRight().accept(this);
     }
 
     @Override
     public void visit(Identifier identifier) {
-        System.out.println(identifier.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(identifier.toString());
     }
 
     @Override
     public void visit(Length length) {
-        System.out.println(length.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(length.toString());
         length.getExpression().accept(this);
     }
 
     @Override
     public void visit(MethodCall methodCall) {
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(methodCall.toString());
 
-        System.out.println(methodCall.toString());
         methodCall.getInstance().accept(this);
         methodCall.getMethodName().accept(this);
         ArrayList<Expression> args = new ArrayList<> (methodCall.getArgs());
@@ -325,19 +357,26 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(NewArray newArray) {
-        newArray.getExpression().accept(this); // do we need this?
-        //if(newArray.getExpression().getConstant() == 0) // is that all?
-          //  System.out.println("ErrorItemMessage: Array length should not be zero or negative");
-        //else
+
+        if(hasErrors== false && numPassedRounds == 2)
             System.out.println(newArray.toString());
-            newArray.getExpression().accept(this);
+
+        if(newArray.Size() <= 0 && numPassedRounds == 2){          
+            newArray.setSize(0);
+            int line = newArray.getLine();
+            System.out.print(String.format("Line:%d:Array length should not be zero or negative", line));
+            hasErrors = true;
+        }
+   
+        newArray.getExpression().accept(this);
     }
 
     @Override
     public void visit(NewClass newClass) {
-
+        if(hasErrors== false && numPassedRounds == 2){
         System.out.println(newClass.toString());
         System.out.println(newClass.getClassName());
+        }
     }
 
     @Override
@@ -347,27 +386,27 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(UnaryExpression unaryExpression) {
-
-        System.out.println(unaryExpression.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(unaryExpression.toString());
         unaryExpression.getValue().accept(this);
         
     }
 
     @Override
     public void visit(BooleanValue value) {
-        //if(hasErrors = false)
+        if(hasErrors== false && numPassedRounds == 2)
             System.out.println(value.toString());
     }
 
     @Override
     public void visit(IntValue value) {
-        //if(hasErrors = false)
+        if(hasErrors== false && numPassedRounds == 2)
             System.out.println(value.toString());
     }
 
     @Override
     public void visit(StringValue value) {
-        //if(hasErrors == false)
+        if(hasErrors== false && numPassedRounds == 2)
             System.out.println(value.toString());
     }
 
@@ -375,12 +414,14 @@ public class VisitorImpl implements Visitor {
     public void visit(Assign assign) {
 
         if(assign.getrValue() == null){
-            //System.out.println(assign.toString());  // not sure
+            if(hasErrors== false && numPassedRounds == 2)
+                System.out.println(assign.toString());  // not sure
             assign.getlValue().accept(this);
         }
 
         if(assign.getrValue() != null){
-                System.out.println(assign.toString());
+                if(hasErrors== false && numPassedRounds == 2)
+                    System.out.println(assign.toString());
                 assign.getlValue().accept(this);
                 assign.getrValue().accept(this); 
             }
@@ -388,19 +429,19 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(Block block) {
-        System.out.println(block.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(block.toString());
 
         ArrayList<Statement> bb = new ArrayList<> (block.getBody());
         for(int i = 0; i < bb.size(); i++){
             bb.get(i).accept(this);
         }
-        
     }
 
     @Override
     public void visit(Conditional conditional) {
-
-        System.out.println(conditional.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(conditional.toString());
 
         conditional.getExpression().accept(this);
         conditional.getConsequenceBody().accept(this);
@@ -411,7 +452,8 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(While loop) {
-              System.out.println(loop.toString());
+             if(hasErrors== false && numPassedRounds == 2)
+                System.out.println(loop.toString());
 
               loop.getCondition().accept(this);
               loop.getBody().accept(this);
@@ -419,7 +461,8 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(Write write) {
-        System.out.println(write.toString());
+        if(hasErrors== false && numPassedRounds == 2)
+            System.out.println(write.toString());
 
         write.getArg().accept(this); 
     }
