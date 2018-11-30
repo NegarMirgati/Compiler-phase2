@@ -41,7 +41,7 @@ public class VisitorImpl implements Visitor {
         }
         SymbolTable.top.put(new SymbolTableMethodItem(name,types));
     }
-    public void check_method_name(String methodname, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
+    public void check_method_name(String methodname, ArrayList<VarDeclaration> argTypes){
         try{
             put_method(methodname,argTypes);
         }catch(ItemAlreadyExistsException e){
@@ -104,7 +104,7 @@ public class VisitorImpl implements Visitor {
         
         ArrayList<VarDeclaration>args = new ArrayList<VarDeclaration>();
         args= methodDeclaration.getArgs();
-
+        check_method_name(methodDeclaration.getName().getName(),args);
         ArrayList<Statement> body = methodDeclaration.getBody();
         for(int i = 0; i < body.size(); i++){
             body.get(i).accept(this);
