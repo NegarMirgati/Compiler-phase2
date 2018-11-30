@@ -15,28 +15,15 @@ grammar Smoola;
 }
 @members{
     int num_classes = 0;
-
-    void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
-	SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
-        print(name + " " + type.toString() );
-		}
-   
-    void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
-        ArrayList<Type>types = new ArrayList<Type>();
-        for(int i=0;i<argTypes.size(); i++){
-            types.add(argTypes.get(i).getType());
-        }
-        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
-    }
-    
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
-    int number_of_repeated_method = 0;
-    int number_of_repeated_class = 0;
-    int index_variable =0;
+    //int number_of_repeated_method = 0;
+    //int number_of_repeated_class = 0;
+    //int index_variable =0;
     
     void print(String str){
         System.out.println(str);
     }
+    
    
     void setIncompleteTypes(Program prog){
 
@@ -120,13 +107,7 @@ grammar Smoola;
         {
             Identifier id = new Identifier($name.text);
             $varDec = new VarDeclaration(id, $t.t);
-            try {
-                print("ID and type are " + $t.text + " " + $name.text);
-                putGlobalVar($name.text, $t.t);
-                }
-                catch(ItemAlreadyExistsException e) {
-                print(String.format("[Line #%s] Variable \"%s\" already exists.", $name.getLine(), $name.text));
-                }
+            
         }
     ;
     methodDeclaration returns[MethodDeclaration methodDec]:
@@ -140,17 +121,7 @@ grammar Smoola;
             $methodDec.addArg(arg);}
         (',' id = ID ':' tp = type
         {
-            try{
-                put_method($methodname.text,$methodDec.getArgs());
-            }catch(ItemAlreadyExistsException e){
-                print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), $methodname.text));
-                String new_name = $methodname.text + "Temporary_" + Integer.toString(number_of_repeated_method);
-                number_of_repeated_method+=1;
-                try{
-                put_method(new_name,$methodDec.getArgs());
-                }
-                catch(ItemAlreadyExistsException ee){}
-            }  
+            
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
             $methodDec.addArg(arg2);
