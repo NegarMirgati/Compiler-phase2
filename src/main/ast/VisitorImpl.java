@@ -21,6 +21,51 @@ public class VisitorImpl implements Visitor {
     private SymbolTable symTable ;
     public int number_of_repeated_method=0;
     public int index_variable =0;
+    public void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
+        index_variable+=1;
+        try {
+            
+            SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable));
+
+            }
+            catch(ItemAlreadyExistsException e) {
+            //print(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
+            System.out.println(String.format("Variable \"%s\" already exists.", name));
+            String new_name = name + "Temporary_" + Integer.toString(index_variable);
+            
+            try{
+                SymbolTable.top.put( new SymbolTableVariableItem(new_name,type,index_variable));
+            
+            }
+            catch(ItemAlreadyExistsException ee){}
+            }
+
+        
+        // System.out.println(name + " " + type.toString() );
+    }
+
+    public void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
+        ArrayList<Type>types = new ArrayList<Type>();
+        for(int i=0;i<argTypes.size(); i++){
+            types.add(argTypes.get(i).getType());
+        }
+        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
+    }
+    public void check_method_name(String methodname, ArrayList<VarDeclaration> argTypes){
+        try{
+            put_method(methodname,argTypes);
+        }catch(ItemAlreadyExistsException e){
+            //print(String.format("[Line #%s] Variable \"%s\" already exists.", $methodname.getLine(), methodname));
+            System.out.println(String.format(" Variable \"%s\" already exists.", methodname));
+            String new_name = methodname + "Temporary_" + Integer.toString(number_of_repeated_method);
+            number_of_repeated_method+=1;
+            try{
+            put_method(new_name,argTypes);
+            }
+            catch(ItemAlreadyExistsException ee){}
+        }  
+    }
+
 
     public void checkForRepeatedNameErrors(Program p){
 
@@ -97,6 +142,8 @@ public class VisitorImpl implements Visitor {
         methodDeclaration.getName().accept(this); 
 
         ArrayList<VarDeclaration> args = new ArrayList<>(methodDeclaration.getArgs());
+        args= methodDeclaration.getArgs();
+        check_method_name(methodDeclaration.getName().getName(),args);
         for(int i = 0; i < args.size(); i++){
             args.get(i).accept(this);
         }
