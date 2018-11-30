@@ -37,18 +37,6 @@ grammar Smoola;
     void print(String str){
         System.out.println(str);
     }
-    void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
-			SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
-      print(name + " " + type.toString() );
-		}
-   
-    void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
-        ArrayList<Type>types = new ArrayList<Type>();
-        for(int i=0;i<argTypes.size(); i++){
-            types.add(argTypes.get(i).getType());
-        }
-        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
-    }
    
     void setIncompleteTypes(Program prog){
 
