@@ -409,13 +409,14 @@ grammar Smoola;
             $expr = new StringValue($str.text, st);
         }
             
-        | 'new ' 'int' '[' num = CONST_NUM ']'
+        | ln = 'new ' 'int' '[' num = CONST_NUM ']'
             {   
                 IntType t = new IntType();
                 IntValue val = new IntValue($num.int, t);
                 NewArray newarr = new NewArray();
                 newarr.setExpression(val);
                 newarr.setSize($num.int);
+                newarr.setLine($ln.getLine());
                 $expr = newarr;
             }
         |   'new ' name = ID '(' ')' {
