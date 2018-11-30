@@ -108,6 +108,8 @@ public class VisitorImpl implements Visitor {
     public int getLineOfParentMethod(String methodname, String parentName, Program program){
 
         ClassDeclaration pc = findParentClass(parentName, program);
+        if(pc == null)
+            return -1;
         ArrayList<MethodDeclaration> methods = pc.getMethodDeclarations();
         for(int i = 0 ; i < methods.size(); i++){
             //System.out.println(String.format("this name %s , parent name %s", methodname, methods.get(i).getName().getName()));
@@ -120,6 +122,8 @@ public class VisitorImpl implements Visitor {
     public int getLineOfParentVar(String varName, String parentName, Program program){
 
         ClassDeclaration pc = findParentClass(parentName, program);
+        if(pc == null)
+            return -1;
         ArrayList<VarDeclaration> vars = pc.getVarDeclarations();
         for(int i = 0 ; i < vars.size(); i++){
             if(vars.get(i).getIdentifier().getName().equals(varName))
@@ -155,7 +159,8 @@ public class VisitorImpl implements Visitor {
         if(cd.getParentName() != null){
             String parentName = cd.getParentName().getName();
             ClassDeclaration pc = findParentClass(parentName, program);
-            variableDecs.addAll(pc.getVarDeclarations());
+            if(pc != null)
+                variableDecs.addAll(pc.getVarDeclarations());
         }
        
         variableDecs.addAll(cd.getVarDeclarations());
@@ -181,7 +186,8 @@ public class VisitorImpl implements Visitor {
         if(cd.getParentName() != null){
             String parentName = cd.getParentName().getName();
             ClassDeclaration pc = findParentClass(parentName, program);
-            methodDecs.addAll(pc.getMethodDeclarations());
+            if(pc!= null)
+                methodDecs.addAll(pc.getMethodDeclarations());
         }
        
         methodDecs.addAll(cd.getMethodDeclarations());
