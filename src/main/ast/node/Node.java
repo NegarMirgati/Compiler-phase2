@@ -5,6 +5,6 @@ import ast.Visitor;
 public abstract class Node {
     protected int lineNumber;
     public void accept(Visitor visitor) {}
-    public int getLine() {return lineNumber;}
-    public void setLine(int line_) {lineNumber = line_ ;}
+    public int getLine() {return this.lineNumber;}
+    public void setLine(int line_) {this.lineNumber = line_ ;}
 }

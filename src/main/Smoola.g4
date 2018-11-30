@@ -415,6 +415,7 @@ grammar Smoola;
                 IntValue val = new IntValue($num.int, t);
                 NewArray newarr = new NewArray();
                 newarr.setExpression(val);
+                newarr.setSize($num.int);
                 $expr = newarr;
             }
         |   'new ' name = ID '(' ')' {
