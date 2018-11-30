@@ -193,7 +193,7 @@ public class VisitorImpl implements Visitor {
     public void visit(VarDeclaration varDeclaration) {
         
         System.out.println(varDeclaration.toString());
-        
+        check_variable_name(varDeclaration.getIdentifier().getName(),varDeclaration.getType());
         varDeclaration.getIdentifier().accept(this);
         System.out.println(varDeclaration.getType().toString());
     }
@@ -289,7 +289,7 @@ public class VisitorImpl implements Visitor {
     public void visit(Assign assign) {
 
         if(assign.getrValue() == null){
-            System.out.println(assign.toString());  // not sure
+            //System.out.println(assign.toString());  // not sure
             assign.getlValue().accept(this);
         }
 
