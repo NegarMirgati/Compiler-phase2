@@ -214,7 +214,12 @@ public class VisitorImpl implements Visitor {
         for(int i = 0; i < methodDecs.size(); i++){
             checkVariablesOfMethod(methodDecs.get(i).getArgs(), p);
             checkVariablesOfMethod(methodDecs.get(i).getLocalVars(), p);
+            checkForInvalidIndexOfNewArray(methodDecs.get(i), p);
         }
+    }
+    
+    public void checkForInvalidIndexOfNewArray(MethodDeclaration md, Program p){
+            visit(md);
     }
 
     public ClassDeclaration findParentClass(String parentName, Program p){

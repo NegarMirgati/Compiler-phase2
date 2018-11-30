@@ -16,10 +16,7 @@ grammar Smoola;
 @members{
     int num_classes = 0;
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
-    //int number_of_repeated_method = 0;
-    //int number_of_repeated_class = 0;
-    //int index_variable =0;
-    
+        
     void print(String str){
         System.out.println(str);
     }
