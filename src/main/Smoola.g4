@@ -11,6 +11,7 @@ grammar Smoola;
     import ast.Type.UserDefinedType.*;
     import ast.Type.PrimitiveType.*;
     import java.util.ArrayList;
+    import symbolTable.*;
 }
 @members{
     int num_classes = 0;
@@ -18,7 +19,6 @@ grammar Smoola;
     int number_of_repeated_method = 0;
     int number_of_repeated_class = 0;
     int index_variable =0;
-    ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
     
     void print(String str){
         System.out.println(str);
@@ -35,10 +35,7 @@ grammar Smoola;
         }
         SymbolTable.top.put(new SymbolTableMethodItem(name,types));
     }
-    void print(String str){
-        System.out.println(str);
-    }
-
+   
     void setIncompleteTypes(Program prog){
 
         for(int i = 0; i < incompleteTypes.size(); i++){
@@ -151,7 +148,7 @@ grammar Smoola;
                 put_method(new_name,$methodDec.getArgs());
                 }
                 catch(ItemAlreadyExistsException ee){}
-            }
+            }  
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
             $methodDec.addArg(arg2);
