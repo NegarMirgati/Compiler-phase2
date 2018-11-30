@@ -15,29 +15,14 @@ grammar Smoola;
 }
 @members{
     int num_classes = 0;
-
-    void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
-	SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
-        print(name + " " + type.toString() );
-		}
-   
-    void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
-        ArrayList<Type>types = new ArrayList<Type>();
-        for(int i=0;i<argTypes.size(); i++){
-            types.add(argTypes.get(i).getType());
-        }
-        SymbolTable.top.put(new SymbolTableMethodItem(name,types));
-    }
-    
     ArrayList<UserDefinedType> incompleteTypes = new ArrayList <> ();
-    int number_of_repeated_method = 0;
-    int number_of_repeated_class = 0;
-    int index_variable =0;
+    //int number_of_repeated_method = 0;
+    //int number_of_repeated_class = 0;
+    //int index_variable =0;
     
     void print(String str){
         System.out.println(str);
     }
-
     void setIncompleteTypes(Program prog){
 
         for(int i = 0; i < incompleteTypes.size(); i++){

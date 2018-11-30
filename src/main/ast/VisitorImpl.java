@@ -12,12 +12,15 @@ import ast.node.statement.*;
 import java.util.ArrayList;
 import java.lang.*;
 import symbolTable.*;
+import ast.Type.*;
 
 public class VisitorImpl implements Visitor {
 
     private int numPassedRounds = 0;
     private Boolean hasErrors = false;
     private SymbolTable symTable ;
+    public int number_of_repeated_method=0;
+    public int index_variable =0;
 
     public void checkForRepeatedNameErrors(Program p){
 
@@ -134,7 +137,6 @@ public class VisitorImpl implements Visitor {
 
     @Override
     public void visit(BinaryExpression binaryExpression) {
-
         System.out.println(binaryExpression.toString());
         binaryExpression.getLeft().accept(this);
         binaryExpression.getRight().accept(this);
@@ -161,7 +163,6 @@ public class VisitorImpl implements Visitor {
         for(int i = 0; i < args.size(); i++){
             args.get(i).accept(this);
         }
-
     }
 
     @Override
