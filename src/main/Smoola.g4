@@ -151,7 +151,7 @@ grammar Smoola;
                 put_method(new_name,$methodDec.getArgs());
                 }
                 catch(ItemAlreadyExistsException ee){}
-                
+            }
             Identifier vardecid2 = new Identifier($id.text);
             VarDeclaration arg2 = new VarDeclaration(vardecid2, $tp.t);
             $methodDec.addArg(arg2);
