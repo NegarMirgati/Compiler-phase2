@@ -38,7 +38,7 @@ public class VisitorImpl implements Visitor {
             
 
             }catch(ItemAlreadyExistsException e) {
-            System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", varDeclaration.getLine(), name));
+            System.out.println(String.format("Line:[Line #%s]:Redefinition of variable \"%s\"", varDeclaration.getLine(), name));
             
             String new_name = name + "Temporary_" + Integer.toString(index_variable);
             
@@ -61,7 +61,7 @@ public class VisitorImpl implements Visitor {
             put_class(name,type);
         }catch(ItemAlreadyExistsException e){
 
-            System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", classDeclaration.getLine(), name));
+            System.out.println(String.format("Line:[Line #%s]:Redefinition of class\"%s\"", classDeclaration.getLine(), name));
             
             String new_name = name + "Temporary_" + Integer.toString(index_class);
             
@@ -87,7 +87,7 @@ public class VisitorImpl implements Visitor {
         try{
             put_method(methodname,argTypes);
         }catch(ItemAlreadyExistsException e){
-            print(String.format("[Line #%s] Variable \"%s\" already exists.", methodDeclaration.getLine(), methodname));
+            print(String.format("Line:[Line #%s]:Redefinition of method\"%s\"", methodDeclaration.getLine(), methodname));
             
             String new_name = methodname + "Temporary_" + Integer.toString(number_of_repeated_method);
             number_of_repeated_method+=1;
