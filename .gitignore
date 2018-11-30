@@ -97,4 +97,9 @@ compilerFall97.iml
 *.class
 *.interp
 *.tokens
-
+**.class
+ .DS_Store
+ src/.DS_Store
+ src/.vscode/
+ src/main/.DS_Store
+ src/main/.antlr/
