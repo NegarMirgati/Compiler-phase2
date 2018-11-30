@@ -4,13 +4,13 @@ import ast.Type.Type;
 
 public abstract class SymbolTableVariableItemBase extends SymbolTableItem {
 
-    private int index;
+    protected int index;
     protected Type type;
 
-    public SymbolTableVariableItemBase(String name, Type type, int index) {
-        this.name = name;
+    public SymbolTableVariableItemBase() {
+       /* this.name = name;
         this.type = type;
-        this.index = index;
+        this.index = index;*/
     }
 
     public String getName() {
