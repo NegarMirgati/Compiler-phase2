@@ -22,17 +22,28 @@ public class VisitorImpl implements Visitor {
     public int number_of_repeated_method=0;
     public int index_variable =0;
 
-    /*public void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
+    public void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
+        index_variable+=1;
         try {
-            SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable++));
+            
+            SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable));
+
             }
             catch(ItemAlreadyExistsException e) {
-            print(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
+            //print(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
+            System.out.println(String.format("Variable \"%s\" already exists.", name));
+            String new_name = name + "Temporary_" + Integer.toString(index_variable);
+            
+            try{
+                SymbolTable.top.put( new SymbolTableVariableItem(new_name,type,index_variable));
             
             }
+            catch(ItemAlreadyExistsException ee){}
+            }
+
         
-        print(name + " " + type.toString() );
-    }*/
+        // System.out.println(name + " " + type.toString() );
+    }
 
     public void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
         ArrayList<Type>types = new ArrayList<Type>();
