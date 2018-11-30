@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.lang.*;
 import symbolTable.*;
 import ast.Type.*;
+import ast.Type.UserDefinedType.*;
 
 public class VisitorImpl implements Visitor {
 
@@ -21,27 +22,49 @@ public class VisitorImpl implements Visitor {
     private SymbolTable symTable ;
     public int number_of_repeated_method=0;
     public int index_variable =0;
+    public int index_class =0;
     public void putGlobalVar(String name , Type type) throws ItemAlreadyExistsException{
+        SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable));
+
+        
+        // System.out.println(name + " " + type.toString() );
+    }
+    public void check_variable_name(String name,Type type){
         index_variable+=1;
         try {
+            putGlobalVar(name,type);
             
-            SymbolTable.top.put( new SymbolTableVariableItem(name,type,index_variable));
 
-            }
-            catch(ItemAlreadyExistsException e) {
-            //print(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
+            }catch(ItemAlreadyExistsException e) {
+            //System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
             System.out.println(String.format("Variable \"%s\" already exists.", name));
             String new_name = name + "Temporary_" + Integer.toString(index_variable);
             
             try{
-                SymbolTable.top.put( new SymbolTableVariableItem(new_name,type,index_variable));
+                putGlobalVar(name,type);
+            
+            }catch(ItemAlreadyExistsException ee){}
+            }
+    }
+    public void put_class(String name,Type type)throws ItemAlreadyExistsException{
+        SymbolTable.top.put( new SymbolTableClassItem(name,type,index_class));
+    }
+    public void check_class_name(String name,Type type){
+        index_class+=1;
+        try{
+            put_class(name,type);
+        }catch(ItemAlreadyExistsException e){
+
+            //System.out.println(String.format("[Line #%s] Variable \"%s\" already exists.", name.getLine(), name));
+            System.out.println(String.format("Variable \"%s\" already exists.", name));
+            String new_name = name + "Temporary_" + Integer.toString(index_class);
+            
+            try{
+                put_class(name,type);
             
             }
             catch(ItemAlreadyExistsException ee){}
-            }
-
-        
-        // System.out.println(name + " " + type.toString() );
+        }
     }
 
     public void put_method(String name, ArrayList<VarDeclaration> argTypes)throws ItemAlreadyExistsException{
@@ -122,8 +145,10 @@ public class VisitorImpl implements Visitor {
         classDeclaration.getName().accept(this);
         if(classDeclaration.getParentName() != null)
             classDeclaration.getParentName().accept(this);
-
+            UserDefinedType class_type= new UserDefinedType();
+           class_type.setClassDeclaration(classDeclaration);
         ArrayList<VarDeclaration> vards = new ArrayList<>(classDeclaration.getVarDeclarations());
+        check_class_name(classDeclaration.getName().getName(),class_type);
         for (int i = 0; i < vards.size(); i++){
             vards.get(i).accept(this);
         }
