@@ -369,7 +369,7 @@ public class VisitorImpl implements Visitor {
         if(newArray.Size() <= 0 && numPassedRounds == 2){          
             newArray.setSize(0);
             int line = newArray.getLine();
-            System.out.print(String.format("Line:%d:Array length should not be zero or negative", line));
+            System.out.println(String.format("Line:%d:Array length should not be zero or negative", line));
             hasErrors = true;
         }
    
