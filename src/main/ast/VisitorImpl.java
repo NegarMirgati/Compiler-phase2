@@ -302,8 +302,8 @@ public class VisitorImpl implements Visitor {
         for(int i = 0 ; i < args.size(); i++)
             args.get(i).accept(this);
 
-        if(hasErrors== false && numPassedRounds == 2)
-            System.out.println(methodDeclaration.getReturnType().toString());
+        //if(hasErrors== false && numPassedRounds == 2)
+        //    System.out.println(methodDeclaration.getReturnType().toString());
 
         // accept local variables
         ArrayList <VarDeclaration> localVars = new ArrayList<>(methodDeclaration.getLocalVars());
@@ -327,8 +327,8 @@ public class VisitorImpl implements Visitor {
 
         varDeclaration.getIdentifier().accept(this);
 
-        if(hasErrors== false && numPassedRounds == 2)
-            System.out.println(varDeclaration.getType().toString());
+        //if(hasErrors== false && numPassedRounds == 2)
+        //    System.out.println(varDeclaration.getType().toString());
     }
 
     @Override
@@ -393,8 +393,8 @@ public class VisitorImpl implements Visitor {
     @Override
     public void visit(NewClass newClass) {
         if(hasErrors== false && numPassedRounds == 2){
-        System.out.println(newClass.toString());
-        System.out.println(newClass.getClassName());
+            System.out.println(newClass.toString());
+            System.out.println(newClass.getClassName());
         }
     }
 
