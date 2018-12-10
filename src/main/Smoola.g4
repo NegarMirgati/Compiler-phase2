@@ -378,19 +378,23 @@ grammar Smoola;
     
 	;
 	expressionMethodsTemp [Expression instance] returns [Expression methodcall]:
-	    '.'  ((methodname = ID '(' ')'{   
+     '.' methodname = ID '(' ')'  {   
                 Identifier id = new Identifier($methodname.text);
-                $methodcall = new MethodCall($instance, id);
-            }) 
-        | methodname = ID '(' {
+                MethodCall new_inst = new MethodCall($instance, id);
+            }
+        temp = expressionMethodsTemp[new_inst] {$methodcall = $temp.methodcall;}
+
+     | '.' methodname = ID  '(' {
                 Identifier id = new Identifier($methodname.text);
                 MethodCall tempm = new MethodCall($instance, id);
             }
-        (arg = expression {tempm.addArg($arg.expr);} (',' arg = expression {tempm.addArg($arg.expr);})*) {$methodcall = tempm;} ')' 
-        | 'length' {$methodcall = new Length($instance); }) 
-        expressionMethodsTemp[$instance]
-	    |
-	; 
+            (arg = expression {tempm.addArg($arg.expr);} 
+            (',' arg = expression {tempm.addArg($arg.expr);})*) ')' 
+            temp = expressionMethodsTemp [tempm] {$methodcall = $temp.methodcall;}
+
+     | '.' 'length' {Length new_inst = new Length($instance); } temp = expressionMethodsTemp[new_inst] {$methodcall = $temp.methodcall;}
+     | {$methodcall = $instance;}
+	;
 
     expressionOther returns [Expression expr, Expression lvalue, Expression rvalue]:
 
