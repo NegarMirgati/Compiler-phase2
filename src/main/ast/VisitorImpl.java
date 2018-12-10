@@ -262,6 +262,8 @@ public class VisitorImpl implements Visitor {
             numPassedRounds += 1;
         }
         if(numPassedRounds == 2){ // final round : print ast if no errors found
+            if(hasErrors == false)
+                System.out.println(program.toString());
             ArrayList<ClassDeclaration> allClasses =  getAllClassDeclarations(program);
             for(int i = 0; i < allClasses.size(); i++){
                 allClasses.get(i).accept(this);
@@ -296,6 +298,10 @@ public class VisitorImpl implements Visitor {
    
         methodDeclaration.getName().accept(this); 
 
+        ArrayList<VarDeclaration> args = methodDeclaration.getArgs();
+        for(int i = 0 ; i < args.size(); i++)
+            args.get(i).accept(this);
+
         if(hasErrors== false && numPassedRounds == 2)
             System.out.println(methodDeclaration.getReturnType().toString());
 
@@ -318,7 +324,9 @@ public class VisitorImpl implements Visitor {
 
         if(hasErrors== false && numPassedRounds == 2)
             System.out.println(varDeclaration.toString());
+
         varDeclaration.getIdentifier().accept(this);
+
         if(hasErrors== false && numPassedRounds == 2)
             System.out.println(varDeclaration.getType().toString());
     }

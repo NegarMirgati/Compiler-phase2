@@ -11,7 +11,7 @@ class Math {
         var j : int;
         j = 1;
         while(f <> 0) {
-            j = i + j * (f - i) + 5;
+            j = j * f;
         }
         return j;
     }
